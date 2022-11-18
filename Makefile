@@ -11,13 +11,13 @@ test: $(VENV)/init ## run pytest
 	. $(VENV)/bin/activate && pytest -rA -vvs --log-level INFO
 
 lint: $(VENV)/init ## run flake8 to check the code
-	. $(VENV)/bin/activate && flake8 src tests
+	. $(VENV)/bin/activate && flake8 py3arch tests
 
 install-editable: $(VENV)/init
 	. $(VENV)/bin/activate && $(PIP) install -e .
 
 fmt: $(VENV)/init ## run black to format the code
-	. $(VENV)/bin/activate && black src tests
+	. $(VENV)/bin/activate && black py3arch tests
 
 $(VENV)/init: ## init the virtual environment
 	python3 -m venv $(VENV)
