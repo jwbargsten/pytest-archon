@@ -5,8 +5,8 @@ from collections.abc import Container, Sequence
 from modulefinder import ModuleFinder, Module
 
 
-def collect_modules(base_path: Path) -> Iterable[tuple[tuple[str], Path, Module]]:
-    for module_path in base_path.glob("**/*.py"):
+def collect_modules(base_path: Path, package: str = ".") -> Iterable[tuple[tuple[str], Path, Module]]:
+    for module_path in base_path.glob(f"{package}/**/*.py"):
         finder = FlatModuleFinder(path=[str(base_path), *sys.path])
         finder.load_file(str(module_path))
 
