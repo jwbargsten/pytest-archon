@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 from typing import Iterable, IO
-from collections.abc import Container, Sequence
+from collections.abc import Container
 from modulefinder import ModuleFinder, Module
 
 
@@ -19,7 +19,7 @@ def collect_modules(base_path: Path, package: str = ".") -> Iterable[tuple[tuple
 
 def path_to_module_name(module_path: Path, base_path: Path):
     rel_path = module_path.relative_to(base_path)
-    return rel_path.parent.parts + (rel_path.stem,)
+    return rel_path.parent.parts if rel_path.stem == "__init__" else rel_path.parent.parts + (rel_path.stem,)
 
 
 class FlatModuleFinder(ModuleFinder):
