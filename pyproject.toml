@@ -22,5 +22,13 @@ classifiers = [
 dependencies = [ ]
 dynamic = ["version"]
 
+[project.optional-dependencies]
+dev = ["pytest>=7.2"]
+
 [tool.black]
 line-length=110
+
+[tool.pytest.ini_options]
+addopts = [
+    "--import-mode=importlib",
+]

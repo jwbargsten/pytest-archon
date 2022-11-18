@@ -14,7 +14,7 @@ lint: $(VENV)/init ## run flake8 to check the code
 	. $(VENV)/bin/activate && flake8 py3arch tests
 
 install-editable: $(VENV)/init
-	. $(VENV)/bin/activate && $(PIP) install -e .
+	. $(VENV)/bin/activate && $(PIP) install -e '.[dev]'
 
 fmt: $(VENV)/init ## run black to format the code
 	. $(VENV)/bin/activate && black py3arch tests
