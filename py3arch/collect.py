@@ -6,11 +6,15 @@ from modulefinder import ModuleFinder, Module
 
 
 def collect_modules(base_path: Path) -> Iterable[tuple[tuple[str], Path, Module]]:
-    for module_path in base_path.glob('**/*.py'):
+    for module_path in base_path.glob("**/*.py"):
         finder = FlatModuleFinder(path=[str(base_path), *sys.path])
         finder.load_file(str(module_path))
 
-        yield (path_to_module_name(module_path, base_path), module_path, [m for m in finder.modules.values() if not m.__file__ or Path(m.__file__) != module_path])
+        yield (
+            path_to_module_name(module_path, base_path),
+            module_path,
+            [m for m in finder.modules.values() if not m.__file__ or Path(m.__file__) != module_path],
+        )
 
 
 def path_to_module_name(module_path: Path, base_path: Path):
@@ -19,8 +23,7 @@ def path_to_module_name(module_path: Path, base_path: Path):
 
 
 class FlatModuleFinder(ModuleFinder):
-    
-    def __init__(self, path: list[str] | None, excludes: Container[str]=[]) -> None:
+    def __init__(self, path: list[str] | None, excludes: Container[str] = []) -> None:
         super().__init__(path, excludes=excludes)
         self._depth = 0
 
