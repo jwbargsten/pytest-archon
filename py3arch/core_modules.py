@@ -1,12 +1,11 @@
 import pkg_resources
-import os
 import sys
 from pathlib import Path
 
 
-def list_core_modules(version=None):
+def list_core_modules(version=None) -> list[str]:
     if version is None:
-        version = [sys.version_info.major, sys.version_info.major]
+        version = [sys.version_info.major, sys.version_info.minor]
     if version[0] == 3 and version[1] > 9:
         modules = list(set(list(sys.stdlib_module_names) + list(sys.builtin_module_names)))
     else:

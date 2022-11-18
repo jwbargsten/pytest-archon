@@ -48,7 +48,7 @@ def test_module_imports_other_module(create_testset):
         ("othermodule.py", "import module")
     )
 
-    module_names = [m.__name__ for name, path, modules in collect_modules(path) for m in modules]
+    module_names = {m.__name__ for name, path, modules in collect_modules(path) for m in modules}
 
     assert "module" in module_names
     assert "othermodule" not in module_names
@@ -62,7 +62,7 @@ def test_module_import_nested_modules(create_testset):
         ("othermodule.py", "import package.module")
     )
 
-    module_names = [m.__name__ for name, path, modules in collect_modules(path) for m in modules]
+    module_names = {m.__name__ for name, path, modules in collect_modules(path) for m in modules}
 
     assert "package.module" in module_names
     assert "othermodule" not in module_names
