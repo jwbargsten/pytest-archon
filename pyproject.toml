@@ -5,28 +5,27 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "py3arch"
 description = "Rule your architecture like a py3arch"
-authors = [ 
-{ author= "Arjan Molenaar", email="gaphor@gmail.com"} ,
-
-{ author= "Joachim Bargsten", email="jw@bargsten.org"} 
+authors = [
+    { author = "Arjan Molenaar", email = "gaphor@gmail.com" },
+    { author = "Joachim Bargsten", email = "jw@bargsten.org" }
 ]
 readme = "README.md"
 requires-python = ">=3.8"
-license = {text = "Apache Software License"}
+license = { text = "Apache Software License" }
 classifiers = [
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
-        "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "License :: OSI Approved :: Apache Software License",
 ]
-dependencies = [ ]
+dependencies = []
 dynamic = ["version"]
 
 [project.optional-dependencies]
 dev = ["pytest>=7.2"]
 
 [tool.black]
-line-length=110
+line-length = 110
 
 [tool.pytest.ini_options]
 addopts = [

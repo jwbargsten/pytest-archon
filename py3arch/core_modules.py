@@ -1,0 +1,21 @@
+import pkg_resources
+import os
+import sys
+from pathlib import Path
+
+
+def list_core_modules(version=None):
+  if version is None:
+    version = sys.version_info
+  if version.major == 3 and version.minor > 9:
+    modules = list(
+      set(list(sys.stdlib_module_names) + list(sys.builtin_module_names)))
+  else:
+    modules_file = Path(
+      pkg_resources.resource_filename("assets", "core-module-lists",
+                                      f"{version.major}.{version.minor}"))
+    if not modules_file.exists():
+      raise FileNotFoundError(
+        f"{modules_file} does not exist, perhaps your python version is not supported")
+    modules = modules_file.read_text().splitlines()
+  return modules
