@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "py3arch"
+description = "Rule your architecture like a py3arch"
+authors = [ 
+{ author= "Arjan Molenaar", email="gaphor@gmail.com"} ,
+
+{ author= "Joachim Bargsten", email="jw@bargsten.org"} 
+]
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "Apache Software License"}
+classifiers = [
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "License :: OSI Approved :: Apache Software License",
+]
+dependencies = [ ]
+dynamic = ["version"]
+
+[tool.black]
+line-length=110
