@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 
-def list_core_modules(version=None):
+def list_core_modules(version=None) -> list[str]:
     if version is None:
         version = sys.version_info
     if version >= (3, 10):
