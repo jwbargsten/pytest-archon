@@ -22,7 +22,11 @@ dependencies = []
 dynamic = ["version"]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.2"]
+dev = [
+        "pytest>=7.2",
+        "flake8",
+        "black"
+]
 
 [tool.black]
 line-length = 110
