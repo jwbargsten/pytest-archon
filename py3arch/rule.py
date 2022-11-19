@@ -14,14 +14,14 @@ def rule(ruleset, module, imported) -> str | None:
     """
 
     for pat, rules in ruleset.items():
-        if not fnmatch(module, pat):
+        if not lhs_matches(module, pat):
             continue
 
         if isinstance(rules, str):
             rules = [rules]
 
         for rule in rules:
-            if c := complies(imported, rule):
+            if c := rhs_matches(imported, rule):
                 # expicit allow
                 return None
             elif c is False:
@@ -32,7 +32,24 @@ def rule(ruleset, module, imported) -> str | None:
     return None
 
 
-def complies(imported, rule) -> bool | None:
+def lhs_matches(module, rule) -> bool | None:
+    """Test if an module matches a rule"""
+    parts = rule.split(" ", 1)
+    if len(parts) == 1:
+        if match(module, parts[0]):
+            # expicit allow
+            return True
+        return False
+    elif parts[0] == "not":
+        if match(module, parts[1]):
+            # explicit deny
+            return False
+        return True
+
+    raise ValueError(f"Don't know how to interpret rule '{rule}'")
+
+
+def rhs_matches(imported, rule) -> bool | None:
     """Test if an import complies to the rule.
 
     Return a tri-state: True, False, None.
@@ -50,11 +67,7 @@ def complies(imported, rule) -> bool | None:
             # explicit deny
             return False
     elif parts[0] == "only":
-        if match(imported, parts[1]):
-            # explicit allow
-            return True
-        else:
-            return False
+        return match(imported, parts[1])
     else:
         raise ValueError(f"Don't know how to interpret rule '{rule}'")
 
