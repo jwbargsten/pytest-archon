@@ -30,6 +30,9 @@ dev = [
         "black"
 ]
 
+[project.scripts]
+py3arch = "py3arch.__main__:main"
+
 [tool.black]
 line-length = 110
 

@@ -10,7 +10,7 @@ from py3arch.rule import rule
 usage = "usage: %prog -d [dir] [package]"
 
 
-def main(argv) -> int:
+def main(argv=sys.argv) -> int:
     parser = optparse.OptionParser(usage=usage)
 
     parser.add_option(
