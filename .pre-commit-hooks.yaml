@@ -1,5 +1,5 @@
 - id: py3arch
-  name: Check for forbidden dependencies
+  name: py3arch
   description: Checks dependencies between modules in your project. Define architectural constraints to enforce module boundaries.
   entry: py3arch
   pass_filenames: false # until py3arch can support multiple files
