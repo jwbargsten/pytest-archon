@@ -5,7 +5,7 @@ dependency si allowed or not.
 
 
 def rule(graph, rules):
-    """Take a graph (module: lisy[module]) and a set of
+    """Take a graph (module: list[module]) and a set of
     rules (...) to determine if the module dependencies
     are according to rules.
     
