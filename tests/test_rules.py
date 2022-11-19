@@ -57,6 +57,7 @@ def test_allow_rules():
 def test_deny_rules():
     assert rule({"module": "not othermodule"}, "module", "othermodule")
     assert not rule({"module": "not othermodule"}, "module", "thirdparty")
+    assert not rule({"not othermodule": "not othermodule"}, "module", "thirdparty")
 
 
 def test_only_rules():

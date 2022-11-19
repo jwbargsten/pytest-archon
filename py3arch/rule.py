@@ -13,9 +13,6 @@ def rule(ruleset, module, imported) -> str | None:
     The rules should be sound.
     """
 
-    def match(pats):
-        return any(fnmatch(imported, p.strip()) for p in pats.split(","))
-
     for pat, rules in ruleset.items():
         if not fnmatch(module, pat):
             continue
@@ -24,25 +21,46 @@ def rule(ruleset, module, imported) -> str | None:
             rules = [rules]
 
         for rule in rules:
-            parts = rule.split(" ", 1)
-            if len(parts) == 1:
-                if match(parts[0]):
-                    # expicit allow
-                    return None
-            elif parts[0] == "not":
-                if match(parts[1]):
-                    # explicit deny
-                    return f"Import '{imported}' is not allows in '{module}' (rule: '{pat} => {rule}')"
-            elif parts[0] == "only":
-                # todo: split by comma
-                if match(parts[1]):
-                    # explicit allow
-                    return None
-                else:
-                    return f"Import '{imported}' is not allows in '{module}' (rule: '{pat} => {rule}')"
-            else:
-                raise ValueError(f"Don't know how to interpret rule '{rule}'")
+            if c := complies(imported, rule):
+                # expicit allow
+                return None
+            elif c is False:
+                return f"Import '{imported}' is not allows in '{module}' (rule: '{pat} => {rule}')"
 
     # No rule matches.
     # TODO: What is our default? Should we add a 'strict' option?
     return None
+
+
+def complies(imported, rule) -> bool | None:
+    """Test if an import complies to the rule.
+
+    Return a tri-state: True, False, None.
+    True is return on a positive check,
+    False on a negating check.
+    In case of None, the rule is undecided.
+    """
+    parts = rule.split(" ", 1)
+    if len(parts) == 1:
+        if match(imported, parts[0]):
+            # expicit allow
+            return True
+    elif parts[0] == "not":
+        if match(imported, parts[1]):
+            # explicit deny
+            return False
+    elif parts[0] == "only":
+        if match(imported, parts[1]):
+            # explicit allow
+            return True
+        else:
+            return False
+    else:
+        raise ValueError(f"Don't know how to interpret rule '{rule}'")
+
+    # undecided
+    return None
+
+
+def match(mod, pats):
+    return any(fnmatch(mod, p.strip()) for p in pats.split(","))
