@@ -3,17 +3,21 @@
 _(pronounce: py-triarch)_
 
 Py3arch is a little tool that helps you structure (large) Python projects.
-This tool allows you to define boundries in your code.
+This tool allows you to define architectural boundries in your code, also
+known as _forbidden dependencies_.
 
-- [ ] Read architectural constraints (rules) from a ini file
-- [ ] Read architectureal constraints from `pyproject.toml`
-- [ ] Build graph of dependencies
+- [x] Read architectureal constraints from `pyproject.toml`
 - [ ] Make it work with pre-commit
-- [ ] 
+
 ## Installation
 
-...
+### As pre-commit hook
 
+Add the following to your `.pre-commit-config.yaml`:
+
+```yaml
+
+```
 ## Usage
 
 ...
