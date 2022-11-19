@@ -43,6 +43,7 @@ def test_module_import_from(create_testset):
     assert "module" in module_names
     assert "othermodule" not in module_names
 
+
 def test_module_import_nested_modules(create_testset):
 
     path = create_testset(
