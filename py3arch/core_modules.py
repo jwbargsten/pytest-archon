@@ -1,6 +1,7 @@
-import pkg_resources
 import sys
 from pathlib import Path
+
+import pkg_resources
 
 
 def list_core_modules(version=None) -> list[str]:

@@ -26,7 +26,7 @@ def test_module_imports_other_module(create_testset):
     assert not voilations
 
 
-def test_module_imports_other_module(create_testset):
+def test_module_fails_imports_other_module(create_testset):
 
     path = create_testset(
         (

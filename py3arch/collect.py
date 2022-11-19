@@ -1,19 +1,19 @@
 from __future__ import annotations
 
 import sys
-from pathlib import Path
-from typing import Iterable, IO
 from collections.abc import Container
-from modulefinder import ModuleFinder, Module
+from modulefinder import Module, ModuleFinder
+from pathlib import Path
+from typing import IO, Iterable
 
 
 def module_map(base_path: Path, package: str = "."):
     for name, path, modules in collect_modules(base_path, package):
         for m in modules:
-            yield (".".join(name), m.__name__)
+            yield (".".join(name), m.__name__)  # type: ignore[attr-defined]
 
 
-def collect_modules(base_path: Path, package: str = ".") -> Iterable[tuple[tuple[str], Path, Module]]:
+def collect_modules(base_path: Path, package: str = ".") -> Iterable[tuple[tuple[str], Path, list[Module]]]:
     for module_path in base_path.glob(f"{package}/**/*.py"):
         finder = FlatModuleFinder(path=[str(base_path), *sys.path])
         finder.load_file(str(module_path))
@@ -21,7 +21,9 @@ def collect_modules(base_path: Path, package: str = ".") -> Iterable[tuple[tuple
         yield (
             path_to_module_name(module_path, base_path),
             module_path,
-            [m for m in finder.modules.values() if not m.__file__ or Path(m.__file__) != module_path],
+            [
+                m for m in finder.modules.values() if not m.__file__ or Path(m.__file__) != module_path  # type: ignore[attr-defined] # noqa E501
+            ],
         )
 
 
@@ -35,7 +37,9 @@ class FlatModuleFinder(ModuleFinder):
         super().__init__(path, excludes=excludes)
         self._depth = 0
 
-    def load_module(self, fqname: str, fp: IO[str], pathname: str, file_info: tuple[str, str, str]) -> Module:
+    def load_module(  # type: ignore[override]
+        self, fqname: str, fp: IO[str], pathname: str, file_info: tuple[str, str, str]
+    ) -> Module | None:
         if self._depth > 1:
             return None
         self._depth += 1
