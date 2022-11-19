@@ -7,6 +7,12 @@ from collections.abc import Container
 from modulefinder import ModuleFinder, Module
 
 
+def module_map(base_path: Path, package: str = "."):
+    for name, path, modules in collect_modules(base_path, package):
+        for m in modules:
+            yield (".".join(name), m.__name__)
+
+
 def collect_modules(base_path: Path, package: str = ".") -> Iterable[tuple[tuple[str], Path, Module]]:
     for module_path in base_path.glob(f"{package}/**/*.py"):
         finder = FlatModuleFinder(path=[str(base_path), *sys.path])
