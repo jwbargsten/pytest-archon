@@ -25,9 +25,9 @@ dynamic = ["version"]
 
 [project.optional-dependencies]
 dev = [
-        "pytest>=7.2",
-        "flake8",
-        "black"
+    "pytest>=7.2",
+    "flake8",
+    "black"
 ]
 
 [project.scripts]
