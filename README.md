@@ -21,4 +21,6 @@ This tool allows you to define boundries in your code.
 
 ## Similar projects
 
-Java: [archunit](https://www.archunit.org/)
+* [Archunit](https://www.archunit.org/) (Java)
+* [Dependency Cruiser](https://github.com/sverweij/dependency-cruiser) (Javascript)
+* 
