@@ -18,7 +18,9 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "License :: OSI Approved :: Apache Software License",
 ]
-dependencies = []
+dependencies = [
+    'tomli; python_version<"3.11"'
+]
 dynamic = ["version"]
 
 [project.optional-dependencies]
