@@ -1,15 +1,18 @@
 from __future__ import annotations
 
 import ast
+import sys
 from pathlib import Path
 from typing import Iterable
+from py3arch.import_finder import resolve_import_from, resolve_module_or_object
 
 
 def collect_modules(base_path: Path, package: str = ".") -> Iterable[tuple[str, str]]:
-    for module_path in base_path.glob(f"{package}/**/*.py"):
-        module_name = path_to_module_name(module_path, base_path)
-        for imported in find_imports(ast.parse(module_path.read_bytes()), str(module_path)):
-            yield module_name, imported
+    for py_file in base_path.glob(f"{package}/**/*.py"):
+        module_name = path_to_module_name(py_file, base_path)
+        tree = ast.parse(py_file.read_bytes())
+        imported_iter = find_imports(tree, module_name, sys.path + [str(base_path)])
+        yield module_name, list(imported_iter)
 
 
 def path_to_module_name(module_path: Path, base_path: Path) -> str:
@@ -19,22 +22,16 @@ def path_to_module_name(module_path: Path, base_path: Path) -> str:
     )
 
 
-def find_imports(root, current_module) -> Iterable[str]:
-    for node in ast.walk(root):
+def find_imports(tree, package: str, path: Iterable[str] = None, resolve=True) -> Iterable[str]:
+    if path is None:
+        path = sys.path
+    for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
                 yield alias.name
         elif isinstance(node, ast.ImportFrom):
-            if node.level == 0:
-                assert node.module
-                yield from (f"{node.module}.{alias.name}" for alias in node.names)
-            else:
-                yield from (
-                    f"{relative(current_module, node.module, node.level)}.{alias.name}"
-                    for alias in node.names
-                )
-
-
-def relative(current_module, module, level):
-    parent = current_module.rsplit(".", level)[0]
-    return f"{parent}.{module}" if module else parent
+            for alias in node.names:
+                fqname = resolve_import_from(alias.name, node.module, package=package, level=node.level)
+                if resolve:
+                    fqname = resolve_module_or_object(fqname, path=path)
+                yield fqname

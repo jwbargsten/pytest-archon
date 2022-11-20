@@ -1,34 +1,29 @@
-import pytest
-
 from py3arch.collect import collect_modules
 
 
 def test_collect_modules(create_testset):
 
     path = create_testset(("mymodule.py", ""))
-
-    collected = list(path.name for name, path, mod in collect_modules(path))
-
-    assert "mymodule.py" in collected
+    collected = list(name for name, _ in collect_modules(path))
+    assert "mymodule" in collected
 
 
 def test_collect_with_system_modules(create_testset):
 
     path = create_testset(("mymodule.py", "import sys, os"))
 
-    name, path, modules = next(collect_modules(path))
-    modules = [m.__name__ for m in modules]
+    name, imports = next(collect_modules(path))
 
-    assert name == ("mymodule",)
-    assert "sys" in modules
-    assert "os" in modules
+    assert name == "mymodule"
+    assert "sys" in imports
+    assert "os" in imports
 
 
 def test_module_imports_other_module(create_testset):
 
     path = create_testset(("module.py", ""), ("othermodule.py", "import module"))
 
-    module_names = {m.__name__ for name, path, modules in collect_modules(path) for m in modules}
+    module_names = {i for name, imports in collect_modules(path) for i in imports}
 
     assert "module" in module_names
     assert "othermodule" not in module_names
@@ -38,10 +33,8 @@ def test_module_import_from(create_testset):
 
     path = create_testset(("module.py", "val = 1"), ("othermodule.py", "from module import val"))
 
-    module_names = {m.__name__ for name, path, modules in collect_modules(path) for m in modules}
-
-    assert "module" in module_names
-    assert "othermodule" not in module_names
+    module_names = {i for name, imports in collect_modules(path) for i in imports}
+    assert module_names == {"module"}
 
 
 def test_module_import_nested_modules(create_testset):
@@ -50,13 +43,12 @@ def test_module_import_nested_modules(create_testset):
         ("package/__init__.py", ""), ("package/module.py", ""), ("othermodule.py", "import package.module")
     )
 
-    module_names = {m.__name__ for name, path, modules in collect_modules(path) for m in modules}
+    module_names = {i for name, imports in collect_modules(path) for i in imports}
 
     assert "package.module" in module_names
     assert "othermodule" not in module_names
 
 
-@pytest.mark.xfail
 def test_relative_imports(create_testset):
 
     path = create_testset(
@@ -68,6 +60,6 @@ def test_relative_imports(create_testset):
     )
 
     print(list(collect_modules(path)))
-    module_names = {m.__name__ for name, path, modules in collect_modules(path) for m in modules}
+    module_names = {i for name, imports in collect_modules(path) for i in imports}
 
     assert "package.importme" in module_names

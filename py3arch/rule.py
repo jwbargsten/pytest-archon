@@ -2,6 +2,7 @@
 This is te one and only module that will rule if your
 dependency si allowed or not.
 """
+from __future__ import annotations
 
 from fnmatch import fnmatch
 
