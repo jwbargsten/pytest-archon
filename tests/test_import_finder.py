@@ -1,6 +1,6 @@
 import ast
 import sys
-from py3arch.import_finder import walk_ast
+from py3arch.import_finder import walk_ast, explode_import
 
 
 def test_ast_walk(create_testset):
@@ -33,3 +33,7 @@ from ..subpkg2.moduleZ import CONSTANT_A
     imports = walk_ast(tree, package="pkgA.subpkg1.subpkg1a", path=[str(path)] + sys.path)
     for imp in imports:
         print(imp)
+
+def test_explode_import():
+    assert explode_import("a.b.c") == ["a", "a.b", "a.b.c"]
+    assert explode_import("a") == ["a"]

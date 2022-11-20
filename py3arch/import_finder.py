@@ -2,6 +2,7 @@ import ast
 import sys
 import importlib
 import os
+from importlib.machinery import PathFinder
 
 # https://stackoverflow.com/questions/54325116/can-i-handle-imports-in-an-abstract-syntax-tree
 # https://bugs.python.org/issue38721
@@ -14,7 +15,6 @@ def resolve_module_or_object(fqname, path=None):
 
 
 def find_spec(fqname, path=None):
-
     # taken from importlib.util.find_spec
     if fqname in sys.modules:
         module = sys.modules[fqname]
@@ -29,16 +29,16 @@ def find_spec(fqname, path=None):
                 raise ValueError("{}.__spec__ is None".format(fqname))
             return spec
 
-    importlib.machinery.PathFinder.invalidate_caches()
+    PathFinder.invalidate_caches()
 
     if "." not in fqname:
-        return importlib.machinery.PathFinder.find_spec(fqname, path)
+        return PathFinder.find_spec(fqname, path)
 
     parts = fqname.split(".")
     while parts:
         head = parts[0]
         parts = parts[1:]
-        spec = importlib.machinery.PathFinder.find_spec(head, path)
+        spec = PathFinder.find_spec(head, path)
         if spec is None:
             # if we cannot find the last part the "c" of "a.b.c"
             # then we might try to import an object
@@ -50,7 +50,7 @@ def find_spec(fqname, path=None):
                 return None
         file_path = spec.origin
         path = path + [os.path.dirname(file_path)]
-    return importlib.machinery.PathFinder.find_spec(head, path)
+    return PathFinder.find_spec(head, path)
 
 
 def resolve_import_from(name, module=None, package=None, level=None):
@@ -72,6 +72,15 @@ def resolve_import_from(name, module=None, package=None, level=None):
         # from .moduleZ import moduleX
         return "{}.{}.{}".format(base, module, name)
 
+def explode_import(fqname):
+    parts = fqname.split(".")
+    if len(parts) <= 1:
+        return [fqname]
+
+    acc = [parts[0]]
+    for p in parts[1:]:
+        acc.append(".".join([acc[-1], p]))
+    return acc
 
 def walk_ast(tree, package=None, path=None):
     modules = []

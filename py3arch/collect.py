@@ -4,7 +4,7 @@ import ast
 import sys
 from pathlib import Path
 from typing import Iterable
-from py3arch.import_finder import resolve_import_from, resolve_module_or_object
+from py3arch.import_finder import resolve_import_from, resolve_module_or_object,explode_import
 
 
 def collect_modules(base_path: Path, package: str = ".") -> Iterable[tuple[str, str]]:
@@ -22,7 +22,7 @@ def path_to_module_name(module_path: Path, base_path: Path) -> str:
     )
 
 
-def find_imports(tree, package: str, path: Iterable[str] = None, resolve=True) -> Iterable[str]:
+def find_imports(tree, package: str, path: Iterable[str] = None, resolve=True, explode=True) -> Iterable[str]:
     if path is None:
         path = sys.path
     for node in ast.walk(tree):
@@ -34,4 +34,9 @@ def find_imports(tree, package: str, path: Iterable[str] = None, resolve=True) -
                 fqname = resolve_import_from(alias.name, node.module, package=package, level=node.level)
                 if resolve:
                     fqname = resolve_module_or_object(fqname, path=path)
-                yield fqname
+                if explode:
+                    imports = explode_import(fqname)
+                else:
+                    imports = [fqname]
+                for i in imports:
+                    yield i

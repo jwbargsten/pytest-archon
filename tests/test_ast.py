@@ -64,6 +64,7 @@ def test_parse_relative_imports(create_testset):
         "pkgA.moduleA",
         "pkgA.subpkg1.moduleX",
         "pkgA.subpkg1.moduleY",
+        "pkgA.subpkg2.subpkg2a",
         "pkgA.subpkg2.subpkg2a.moduleM",
         "pkgA.subpkg2.moduleZ",
     }
