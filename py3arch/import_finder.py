@@ -36,22 +36,23 @@ def find_spec(fqname, path=None):
     if "." not in fqname:
         return importlib.machinery.PathFinder.find_spec(fqname, path)
 
-    head, tail = fqname.split(".", 1)
+    parts = fqname.split(".", 1)
     spec = None
-    while head:
+    while parts:
+        head = parts[0]
+        parts = parts[1:]
         spec = importlib.machinery.PathFinder.find_spec(head, path)
         if spec is None:
             # if we cannot find the last part the "c" of "a.b.c"
             # then we might try to import an object
             # but if we already cannot find the spec for "a.b", then
             # something is off
-            if tail and "." in tail:
+            if len(parts) > 1:
                 raise ImportError("No module named {name!r}".format(name=head), name=head)
             else:
                 return None
         file_path = spec.origin
         path = path + [os.path.dirname(file_path)]
-        head, tail = tail.split(".", 1) if tail and "." in tail else (tail, None)
     return spec
 
 
