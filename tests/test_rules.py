@@ -1,6 +1,8 @@
+import pytest
+
 from py3arch.collect import module_map
 from py3arch.config import read_rules
-from py3arch.rule import rule
+from py3arch.rule import ALLOWED, DENIED, UNDECIDED, lhs_matches, rhs_matches, rule
 
 
 def test_module_imports_other_module(create_testset):
@@ -33,6 +35,7 @@ def test_module_fails_imports_other_module(create_testset):
             "pyproject.toml",
             """\
             [tool.py3arch.rules]
+            foobar = [ "sys" ]
             othermodule = [ "not module" ]
             """,
         ),
@@ -70,3 +73,27 @@ def test_only_rules():
 def test_wildcard_rule():
     assert not rule({"mo*": "only other*"}, "module", "othermodule")
     assert rule({"mo*": "only other*"}, "module", "thirdparty")
+
+
+def test_lhs_matches():
+    assert not lhs_matches("os.path", "mismatch")
+    assert lhs_matches("os.path", "os.path")
+    assert lhs_matches("os.path", "os")
+    assert not lhs_matches("os.path", "not os.path")
+    assert not lhs_matches("os.path", "not os")
+    with pytest.raises(ValueError):
+        lhs_matches("os.path", "foo bar")
+
+
+def test_rhs_matches():
+    assert rhs_matches("os.path", "mismatch") is UNDECIDED
+    assert rhs_matches("os.path", "os.path") is ALLOWED
+    assert rhs_matches("os.path", "os") is ALLOWED
+    assert rhs_matches("os.path", "not os.path") is DENIED
+    assert rhs_matches("os.path", "not os") is DENIED
+    assert rhs_matches("os.path", "only os") is ALLOWED
+    assert rhs_matches("os.path", "only os.path") is ALLOWED
+    assert rhs_matches("os.path", "only sys") is DENIED
+
+    with pytest.raises(ValueError):
+        rhs_matches("os.path", "foo bar")

@@ -5,6 +5,8 @@ dependency si allowed or not.
 
 from fnmatch import fnmatch
 
+UNDECIDED, ALLOWED, DENIED = (0, 1, 2)
+
 
 def rule(ruleset, module, imported) -> str | None:
     """Take a set of rules (module: list[module]) and a
@@ -21,10 +23,9 @@ def rule(ruleset, module, imported) -> str | None:
             rules = [rules]
 
         for rule in rules:
-            if c := rhs_matches(imported, rule):
-                # expicit allow
+            if (c := rhs_matches(imported, rule)) is ALLOWED:
                 return None
-            elif c is False:
+            elif c is DENIED:
                 return f"Import '{imported}' is not allows in '{module}' (rule: '{pat} => {rule}')"
 
     # No rule matches.
@@ -32,24 +33,18 @@ def rule(ruleset, module, imported) -> str | None:
     return None
 
 
-def lhs_matches(module, rule) -> bool | None:
+def lhs_matches(module, rule) -> bool:
     """Test if an module matches a rule"""
     parts = rule.split(" ", 1)
     if len(parts) == 1:
-        if match(module, parts[0]):
-            # expicit allow
-            return True
-        return False
+        return match(module, parts[0])
     elif parts[0] == "not":
-        if match(module, parts[1]):
-            # explicit deny
-            return False
-        return True
+        return not match(module, parts[1])
 
     raise ValueError(f"Don't know how to interpret rule '{rule}'")
 
 
-def rhs_matches(imported, rule) -> bool | None:
+def rhs_matches(imported, rule) -> int:
     """Test if an import complies to the rule.
 
     Return a tri-state: True, False, None.
@@ -61,19 +56,18 @@ def rhs_matches(imported, rule) -> bool | None:
     if len(parts) == 1:
         if match(imported, parts[0]):
             # expicit allow
-            return True
+            return ALLOWED
     elif parts[0] == "not":
         if match(imported, parts[1]):
             # explicit deny
-            return False
+            return DENIED
     elif parts[0] == "only":
-        return match(imported, parts[1])
+        return ALLOWED if match(imported, parts[1]) else DENIED
     else:
         raise ValueError(f"Don't know how to interpret rule '{rule}'")
 
-    # undecided
-    return None
+    return UNDECIDED
 
 
 def match(mod, pats):
-    return any(fnmatch(mod, p.strip()) for p in pats.split(","))
+    return any(fnmatch(mod, p.strip()) or fnmatch(mod, f"{p.strip()}.*") for p in pats.split(","))

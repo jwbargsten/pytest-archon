@@ -36,6 +36,10 @@ py3arch = "py3arch.__main__:main"
 [tool.black]
 line-length = 110
 
+[tool.isort]
+profile = "black"
+line_length = 110
+
 [tool.pytest.ini_options]
 addopts = [
     "--import-mode=importlib",
