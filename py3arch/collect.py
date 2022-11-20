@@ -12,7 +12,7 @@ def collect_modules(base_path: Path, package: str = ".") -> Iterable[tuple[str, 
         module_name = path_to_module_name(py_file, base_path)
         tree = ast.parse(py_file.read_bytes())
         imported_iter = find_imports(tree, module_name, sys.path + [str(base_path)])
-        yield module_name, list(imported_iter)
+        yield module_name, set(imported_iter)
 
 
 def path_to_module_name(module_path: Path, base_path: Path) -> str:
