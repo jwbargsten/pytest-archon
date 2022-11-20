@@ -1,49 +1,40 @@
 from __future__ import annotations
 
-import sys
-from collections.abc import Container
-from modulefinder import Module, ModuleFinder
+import ast
 from pathlib import Path
-from typing import IO, Iterable
+from typing import Iterable
 
 
-def module_map(base_path: Path, package: str = "."):
-    for name, path, modules in collect_modules(base_path, package):
-        for m in modules:
-            yield (".".join(name), m.__name__)  # type: ignore[attr-defined]
-
-
-def collect_modules(base_path: Path, package: str = ".") -> Iterable[tuple[tuple[str], Path, list[Module]]]:
+def collect_modules(base_path: Path, package: str = ".") -> Iterable[tuple[str, str]]:
     for module_path in base_path.glob(f"{package}/**/*.py"):
-        finder = FlatModuleFinder(path=[str(base_path), *sys.path])
-        finder.load_file(str(module_path))
-
-        yield (
-            path_to_module_name(module_path, base_path),
-            module_path,
-            [
-                m for m in finder.modules.values() if not m.__file__ or Path(m.__file__) != module_path  # type: ignore[attr-defined] # noqa E501
-            ],
-        )
+        module_name = path_to_module_name(module_path, base_path)
+        for imported in find_imports(ast.parse(module_path.read_bytes()), str(module_path)):
+            yield module_name, imported
 
 
-def path_to_module_name(module_path: Path, base_path: Path):
+def path_to_module_name(module_path: Path, base_path: Path) -> str:
     rel_path = module_path.relative_to(base_path)
-    return rel_path.parent.parts if rel_path.stem == "__init__" else rel_path.parent.parts + (rel_path.stem,)
+    return ".".join(
+        rel_path.parent.parts if rel_path.stem == "__init__" else rel_path.parent.parts + (rel_path.stem,)
+    )
 
 
-class FlatModuleFinder(ModuleFinder):
-    def __init__(self, path: list[str] | None, excludes: Container[str] = []) -> None:
-        super().__init__(path, excludes=excludes)
-        self._depth = 0
+def find_imports(root, current_module) -> Iterable[str]:
+    for node in ast.walk(root):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                yield alias.name
+        elif isinstance(node, ast.ImportFrom):
+            if node.level == 0:
+                assert node.module
+                yield from (f"{node.module}.{alias.name}" for alias in node.names)
+            else:
+                yield from (
+                    f"{relative(current_module, node.module, node.level)}.{alias.name}"
+                    for alias in node.names
+                )
 
-    def load_module(  # type: ignore[override]
-        self, fqname: str, fp: IO[str], pathname: str, file_info: tuple[str, str, str]
-    ) -> Module | None:
-        if self._depth > 1:
-            return None
-        self._depth += 1
-        try:
-            return super().load_module(fqname, fp, pathname, file_info)
-        finally:
-            self._depth -= 1
+
+def relative(current_module, module, level):
+    parent = current_module.rsplit(".", level)[0]
+    return f"{parent}.{module}" if module else parent
