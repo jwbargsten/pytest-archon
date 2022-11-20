@@ -6,6 +6,7 @@ from py3arch.import_finder import walk_ast
 def test_ast_walk():
     data = """
 import datetime
+import datetime.datetime
 import pkgA
 import pkgA.subpkg1
 import pkgA.subpkg1.subpkg1a

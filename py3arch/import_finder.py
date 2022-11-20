@@ -3,35 +3,57 @@ import sys
 import importlib
 import os
 
+import modulefinder
 
-def find_module(name, path=None):
-    importlib.machinery.PathFinder.invalidate_caches()
-    spec = importlib.machinery.PathFinder.find_spec(name, path)
-
-    if spec is None:
-        raise ImportError("No module named {name!r}".format(name=name), name=name)
-
-    return spec
+# https://stackoverflow.com/questions/54325116/can-i-handle-imports-in-an-abstract-syntax-tree
+# https://bugs.python.org/issue38721
+# https://github.com/0cjs/sedoc/blob/master/lang/python/importers.md
 
 
 def resolve_module_or_object(fqname, path=None):
-    if not fqname.count("."):
-        return fqname
-    bits = fqname.split(".")
-    parent_name = bits[0]
+    spec = find_spec(fqname, path)
+    return fqname if spec else fqname.rpartition(".")[0]
 
-    spec = find_module(parent_name, path)
-    file_path = spec.origin
 
-    base_path = os.path.dirname(file_path)
-    init = os.path.join(base_path, *(bits[1:] + ["__init__.py"]))
-    direct = os.path.join(base_path, *bits[1:]) + ".py"
-    if os.path.exists(init) or os.path.exists(direct):
-        # we have a module
-        return fqname
-    else:
-        # we imported an object, return "parent"
-        return ".".join(bits[:-1])
+def find_spec(fqname, path=None):
+
+    # taken from importlib.util.find_spec
+    if fqname in sys.modules:
+        module = sys.modules[fqname]
+        if module is None:
+            return None
+        try:
+            spec = module.__spec__
+        except AttributeError:
+            raise ValueError('{}.__spec__ is not set'.format(fqname)) from None
+        else:
+            if spec is None:
+                raise ValueError('{}.__spec__ is None'.format(fqname))
+            return spec
+
+
+    importlib.machinery.PathFinder.invalidate_caches()
+
+    if "." not in fqname:
+        return importlib.machinery.PathFinder.find_spec(fqname, path)
+
+    head, tail = fqname.split(".", 1)
+    spec = None
+    while tail:
+        spec = importlib.machinery.PathFinder.find_spec(head, path)
+        if spec is None:
+            # if we cannot find the last part the "c" of "a.b.c"
+            # then we might try to import an object
+            # but if we already cannot find the spec for "a.b", then
+            # something is off
+            if "." in tail:
+                raise ImportError("No module named {name!r}".format(name=head), name=head)
+            else:
+                return None
+        file_path = spec.origin
+        path = os.path.dirname(file_path)
+        head, tail = fqname.split(".", 1)
+    return spec
 
 
 def resolve_import_from(name, module=None, package=None, level=None):
@@ -64,7 +86,6 @@ def walk_ast(tree, package=None, package_path=None):
         elif isinstance(node, ast.ImportFrom):
             for alias in node.names:
                 fqname = resolve_import_from(alias.name, node.module, package=package, level=node.level)
-                # TODO(jwbargsten): check for builtins
                 fqname = resolve_module_or_object(fqname, path=package_path)
                 modules.append(fqname)
     return modules
