@@ -9,11 +9,19 @@ else:
     import tomli as tomllib
 
 
-def read_rules(file_path: Path) -> dict[str, str | list[str]] | None:
-    toml_text = file_path.read_text(encoding="utf-8")
-    config = tomllib.loads(toml_text)
-    rules_section = config.get("tool", {}).get("py3arch", {}).get("rules", None)
+def read_options(pyproject: Path) -> dict[str, str | list[str]] | None:
+    return _read_pyproject(pyproject, "options", {})
+
+
+def read_rules(pyproject: Path) -> dict[str, str | list[str]] | None:
+    rules_section = _read_pyproject(pyproject, "rules")
     if not rules_section:
         return None  # Empty rule set?
 
     return rules_section
+
+
+def _read_pyproject(pyproject: Path, section: str, default=None):
+    toml_text = pyproject.read_text(encoding="utf-8")
+    config = tomllib.loads(toml_text)
+    return config.get("tool", {}).get("py3arch", {}).get(section, default)
