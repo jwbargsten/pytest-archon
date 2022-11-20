@@ -16,7 +16,6 @@ def test_parse():
 
     # Should this be os.path?
     assert "os.path" in imports
-    assert "os" in imports
     assert "sys" in imports
 
 
@@ -47,7 +46,6 @@ def find_imports(root, current_module) -> Iterable[str]:
         elif isinstance(node, ast.ImportFrom):
             if node.level == 0:
                 assert node.module
-                yield node.module
                 yield from (f"{node.module}.{alias.name}" for alias in node.names)
             else:
                 yield from (
