@@ -3,8 +3,6 @@ import sys
 import importlib
 import os
 
-import modulefinder
-
 # https://stackoverflow.com/questions/54325116/can-i-handle-imports-in-an-abstract-syntax-tree
 # https://bugs.python.org/issue38721
 # https://github.com/0cjs/sedoc/blob/master/lang/python/importers.md
@@ -25,10 +23,10 @@ def find_spec(fqname, path=None):
         try:
             spec = module.__spec__
         except AttributeError:
-            raise ValueError('{}.__spec__ is not set'.format(fqname)) from None
+            raise ValueError("{}.__spec__ is not set".format(fqname)) from None
         else:
             if spec is None:
-                raise ValueError('{}.__spec__ is None'.format(fqname))
+                raise ValueError("{}.__spec__ is None".format(fqname))
             return spec
 
     importlib.machinery.PathFinder.invalidate_caches()
@@ -36,8 +34,7 @@ def find_spec(fqname, path=None):
     if "." not in fqname:
         return importlib.machinery.PathFinder.find_spec(fqname, path)
 
-    parts = fqname.split(".", 1)
-    spec = None
+    parts = fqname.split(".")
     while parts:
         head = parts[0]
         parts = parts[1:]
@@ -53,7 +50,7 @@ def find_spec(fqname, path=None):
                 return None
         file_path = spec.origin
         path = path + [os.path.dirname(file_path)]
-    return spec
+    return importlib.machinery.PathFinder.find_spec(head, path)
 
 
 def resolve_import_from(name, module=None, package=None, level=None):
@@ -62,7 +59,7 @@ def resolve_import_from(name, module=None, package=None, level=None):
         return name if module is None else "{}.{}".format(module, name)
 
     # taken from importlib._bootstrap._resolve_name
-    bits = package.rsplit(".", level - 1)
+    bits = package.rsplit(".", level)
     if len(bits) < level:
         raise ImportError("attempted relative import beyond top-level package")
     base = bits[0]

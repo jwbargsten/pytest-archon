@@ -28,7 +28,9 @@ def main(argv=sys.argv) -> int:
     src_path = Path(options.get("base", base_path))
 
     mapping = collect_modules(src_path, package)
-    voilations = [voilation for module, imported in mapping if (voilation := rule(rules, module, imported))]
+    voilations = [
+        voilation for module, imports in mapping for i in imports if (voilation := rule(rules, module, i))
+    ]
 
     for v in voilations:
         print(v)
