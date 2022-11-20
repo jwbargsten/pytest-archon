@@ -34,6 +34,7 @@ from ..subpkg2.moduleZ import CONSTANT_A
     for imp in imports:
         print(imp)
 
+
 def test_explode_import():
     assert explode_import("a.b.c") == ["a", "a.b", "a.b.c"]
     assert explode_import("a") == ["a"]

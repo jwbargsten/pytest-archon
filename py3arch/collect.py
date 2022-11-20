@@ -4,7 +4,7 @@ import ast
 import sys
 from pathlib import Path
 from typing import Iterable
-from py3arch.import_finder import resolve_import_from, resolve_module_or_object,explode_import
+from py3arch.import_finder import resolve_import_from, resolve_module_or_object, explode_import
 
 
 def collect_modules(base_path: Path, package: str = ".") -> Iterable[tuple[str, str]]:

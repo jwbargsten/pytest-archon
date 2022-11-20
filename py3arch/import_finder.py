@@ -1,6 +1,5 @@
 import ast
 import sys
-import importlib
 import os
 from importlib.machinery import PathFinder
 
@@ -72,6 +71,7 @@ def resolve_import_from(name, module=None, package=None, level=None):
         # from .moduleZ import moduleX
         return "{}.{}.{}".format(base, module, name)
 
+
 def explode_import(fqname):
     parts = fqname.split(".")
     if len(parts) <= 1:
@@ -81,6 +81,7 @@ def explode_import(fqname):
     for p in parts[1:]:
         acc.append(".".join([acc[-1], p]))
     return acc
+
 
 def walk_ast(tree, package=None, path=None):
     modules = []
