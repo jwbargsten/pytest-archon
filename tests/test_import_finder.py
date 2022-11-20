@@ -17,6 +17,6 @@ from ..subpkg2.subpkg2a import moduleM
 from ..subpkg2.moduleZ import CONSTANT_A
 """
     tree = ast.parse(data)
-    imports = walk_ast(tree, package="pkgA.subpkg1.subpkg1a", package_path=sys.path + ["tests/data"])
+    imports = walk_ast(tree, package="pkgA.subpkg1.subpkg1a", path=sys.path + ["tests/data"])
     for imp in imports:
         print(imp)

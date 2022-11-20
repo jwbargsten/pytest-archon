@@ -31,7 +31,6 @@ def find_spec(fqname, path=None):
                 raise ValueError('{}.__spec__ is None'.format(fqname))
             return spec
 
-
     importlib.machinery.PathFinder.invalidate_caches()
 
     if "." not in fqname:
@@ -39,20 +38,20 @@ def find_spec(fqname, path=None):
 
     head, tail = fqname.split(".", 1)
     spec = None
-    while tail:
+    while head:
         spec = importlib.machinery.PathFinder.find_spec(head, path)
         if spec is None:
             # if we cannot find the last part the "c" of "a.b.c"
             # then we might try to import an object
             # but if we already cannot find the spec for "a.b", then
             # something is off
-            if "." in tail:
+            if tail and "." in tail:
                 raise ImportError("No module named {name!r}".format(name=head), name=head)
             else:
                 return None
         file_path = spec.origin
-        path = os.path.dirname(file_path)
-        head, tail = fqname.split(".", 1)
+        path = path + [os.path.dirname(file_path)]
+        head, tail = tail.split(".", 1) if tail and "." in tail else (tail, None)
     return spec
 
 
@@ -76,16 +75,16 @@ def resolve_import_from(name, module=None, package=None, level=None):
         return "{}.{}.{}".format(base, module, name)
 
 
-def walk_ast(tree, package=None, package_path=None):
+def walk_ast(tree, package=None, path=None):
     modules = []
-    if package_path is None:
-        package_path = sys.path
+    if path is None:
+        path = sys.path
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             modules.extend([a.name for a in node.names])
         elif isinstance(node, ast.ImportFrom):
             for alias in node.names:
                 fqname = resolve_import_from(alias.name, node.module, package=package, level=node.level)
-                fqname = resolve_module_or_object(fqname, path=package_path)
+                fqname = resolve_module_or_object(fqname, path=path)
                 modules.append(fqname)
     return modules
