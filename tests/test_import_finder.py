@@ -1,7 +1,6 @@
-import ast
 import sys
+import ast
 from py3arch.import_finder import explode_import, resolve_module_or_object, resolve_import_from
-import py3arch
 
 
 def walk_ast(tree, package=None, path=None):

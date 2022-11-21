@@ -19,7 +19,9 @@ def collect_modules(base_path: Path, package: str = ".") -> Iterable[tuple[str, 
 
 def path_to_module(module_path: Path, base_path: Path) -> str:
     rel_path = module_path.relative_to(base_path)
-    return ".".join((rel_path.parent / rel_path.stem).parts).removesuffix(".__init__")
+    return ".".join(
+        rel_path.parent.parts if rel_path.stem == "__init__" else rel_path.parent.parts + (rel_path.stem,)
+    )
 
 
 def find_imports(

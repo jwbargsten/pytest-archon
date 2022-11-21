@@ -1,4 +1,4 @@
-.PHONY: test help fmt install-editable lint
+.PHONY: test help fmt install-editable lint install
 
 VENV?=.venv
 PIP=$(VENV)/bin/pip
@@ -16,9 +16,15 @@ lint: $(VENV)/init ## run flake8 to check the code
 install-editable: $(VENV)/init
 	. $(VENV)/bin/activate && $(PIP) install -e '.[dev]'
 
+install: $(VENV)/init
+	. $(VENV)/bin/activate && $(PIP) install '.[dev]'
+
 fmt: $(VENV)/init ## run black to format the code
 	. $(VENV)/bin/activate && black py3arch tests
 
+fmt-check: $(VENV)/init ## run black to format the code
+	. $(VENV)/bin/activate && black --check py3arch tests
+
 $(VENV)/init: ## init the virtual environment
-	python3 -m venv $(VENV)
+	python -m venv $(VENV)
 	touch $@
