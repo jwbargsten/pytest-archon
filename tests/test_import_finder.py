@@ -40,6 +40,8 @@ import pkgA.subpkg1
 import pkgA.subpkg1.subpkg1a
 from pkgA import subpkg1
 from . import moduleK, moduleL
+from os import *
+from .. import *
 from .. import moduleX, moduleY
 from ..subpkg2.subpkg2a import moduleM
 from ..subpkg2.moduleZ import CONSTANT_A

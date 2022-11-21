@@ -7,9 +7,7 @@ from importlib.machinery import PathFinder
 # https://github.com/0cjs/sedoc/blob/master/lang/python/importers.md
 
 
-def resolve_module_or_object(fqname, path=None):
-    if path is None:
-        path = sys.path
+def find_spec(fqname, path=None):
     # taken from importlib.util.find_spec
     if fqname in sys.modules:
         module = sys.modules[fqname]
@@ -22,34 +20,48 @@ def resolve_module_or_object(fqname, path=None):
         else:
             if spec is None:
                 raise ValueError("{}.__spec__ is None".format(fqname))
-            return fqname
+            return spec
 
     PathFinder.invalidate_caches()
 
     if "." not in fqname:
-        return fqname
+        return PathFinder.find_spec(fqname, path)
 
     parts = fqname.split(".")
-    head = parts[0]
+    while parts:
+        head = parts[0]
+        parts = parts[1:]
+        spec = PathFinder.find_spec(head, path)
+        if spec is None:
+            # if we cannot find the last part the "c" of "a.b.c"
+            # then we might try to import an object
+            # but if we already cannot find the spec for "a.b", then
+            # something is off
+            if len(parts) > 1:
+                raise ImportError("No module named {name!r}".format(name=head), name=head)
+            else:
+                return None
+        if parts and (
+            not hasattr(spec, "submodule_search_locations") or spec.submodule_search_locations is None
+        ):
+            # we imported an object, return "parent"
+            return None
+        path = spec.submodule_search_locations
+    return spec
 
-    spec = PathFinder.find_spec(head, path)
-    if not hasattr(spec, "submodule_search_locations") or spec.submodule_search_locations is None:
-        # we imported an object, return "parent"
-        return ".".join(parts[:-1])
 
-    for base_path in spec.submodule_search_locations:
-        init = os.path.join(base_path, *(parts[1:] + ["__init__.py"]))
-        direct = os.path.join(base_path, *parts[1:]) + ".py"
-        if os.path.exists(init) or os.path.exists(direct):
-            # we have a module
-            return fqname
-    # we imported an object, return "parent"
-    return ".".join(parts[:-1])
+def resolve_module_or_object(fqname, path=None):
+    if path is None:
+        path = sys.path
+    spec = find_spec(fqname, path)
+    return fqname if spec else fqname.rpartition(".")[0]
 
 
 def resolve_import_from(name, module=None, package=None, level=None):
     if not level:
         # absolute import
+        if name == "*":
+            return module
         return name if module is None else f"{module}.{name}"
 
     # taken from importlib._bootstrap._resolve_name
@@ -61,10 +73,13 @@ def resolve_import_from(name, module=None, package=None, level=None):
     # relative import
     if module is None:
         # from . import moduleX
-        return f"{base}.{name}"
+        prefix = base
     else:
         # from .moduleZ import moduleX
-        return f"{base}.{module}.{name}"
+        prefix = f"{base}.{module}"
+    if name == "*":
+        return prefix
+    return f"{prefix}.{name}"
 
 
 def explode_import(fqname):

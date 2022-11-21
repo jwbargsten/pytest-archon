@@ -45,3 +45,4 @@ Modules can be combined, by separating them with a comma: `module,othermodule`.
 
 * [Archunit](https://www.archunit.org/) (Java)
 * [Dependency Cruiser](https://github.com/sverweij/dependency-cruiser) (Javascript)
+* [import-linter](https://github.com/seddonym/import-linter) (Python)
