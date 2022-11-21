@@ -17,6 +17,7 @@ classifiers = [
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "License :: OSI Approved :: Apache Software License",
+    "Framework :: Pytest",
 ]
 dependencies = [
     'tomli; python_version<"3.11"'
@@ -44,3 +45,6 @@ line_length = 110
 addopts = [
     "--import-mode=importlib",
 ]
+
+[project.entry-points.pytest11]
+py3arch = "py3arch.pytest_py3arch"
