@@ -1,5 +1,5 @@
-import ast
 import sys
+import ast
 from py3arch.import_finder import walk_ast, explode_import
 
 
