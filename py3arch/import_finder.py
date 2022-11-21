@@ -1,5 +1,5 @@
-import sys
 import os
+import sys
 from importlib.machinery import PathFinder
 
 # https://stackoverflow.com/questions/54325116/can-i-handle-imports-in-an-abstract-syntax-tree
@@ -50,7 +50,7 @@ def resolve_module_or_object(fqname, path=None):
 def resolve_import_from(name, module=None, package=None, level=None):
     if not level:
         # absolute import
-        return name if module is None else "{}.{}".format(module, name)
+        return name if module is None else f"{module}.{name}"
 
     # taken from importlib._bootstrap._resolve_name
     bits = package.rsplit(".", level)
@@ -61,10 +61,10 @@ def resolve_import_from(name, module=None, package=None, level=None):
     # relative import
     if module is None:
         # from . import moduleX
-        return "{}.{}".format(base, name)
+        return f"{base}.{name}"
     else:
         # from .moduleZ import moduleX
-        return "{}.{}.{}".format(base, module, name)
+        return f"{base}.{module}.{name}"
 
 
 def explode_import(fqname):
