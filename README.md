@@ -2,6 +2,8 @@
 
 _(pronounce: py-triarch)_
 
+[![build_and_test](https://github.com/jwbargsten/py3arch/actions/workflows/tests.yml/badge.svg)](https://github.com/jwbargsten/py3arch/actions/workflows/tests.yml)
+
 Py3arch is a little tool that helps you structure (large) Python projects.
 This tool allows you to define architectural boundries in your code, also
 known as _forbidden dependencies_.
