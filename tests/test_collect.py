@@ -1,4 +1,5 @@
-from py3arch.collect import collect_modules
+from py3arch.collect import collect_modules, collect_from_pkg
+import py3arch
 
 
 def test_collect_modules(create_testset):
@@ -63,3 +64,8 @@ def test_relative_imports(create_testset):
     module_names = {i for name, imports in collect_modules(path) for i in imports}
 
     assert "package.importme" in module_names
+
+
+def test_collect_pkg():
+    data = collect_from_pkg(py3arch)
+    assert "py3arch.import_finder" in data["py3arch"]["transitive"]

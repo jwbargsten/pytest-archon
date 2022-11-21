@@ -1,6 +1,21 @@
 import sys
 import ast
-from py3arch.import_finder import walk_ast, explode_import
+from py3arch.import_finder import explode_import, resolve_module_or_object, resolve_import_from
+
+
+def walk_ast(tree, package=None, path=None):
+    modules = []
+    if path is None:
+        path = sys.path
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            modules.extend([a.name for a in node.names])
+        elif isinstance(node, ast.ImportFrom):
+            for alias in node.names:
+                fqname = resolve_import_from(alias.name, node.module, package=package, level=node.level)
+                fqname = resolve_module_or_object(fqname, path=path)
+                modules.append(fqname)
+    return modules
 
 
 def test_ast_walk(create_testset):
@@ -38,3 +53,8 @@ from ..subpkg2.moduleZ import CONSTANT_A
 def test_explode_import():
     assert explode_import("a.b.c") == ["a", "a.b", "a.b.c"]
     assert explode_import("a") == ["a"]
+
+
+def test_resolve_module_or_object():
+    res = resolve_module_or_object("fnmatch.fnmatch")
+    assert res == "fnmatch"
