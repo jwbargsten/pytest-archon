@@ -1,10 +1,11 @@
 import sys
 from pathlib import Path
+from typing import List
 
 import pkg_resources
 
 
-def list_core_modules(version=None) -> list[str]:
+def list_core_modules(version=None) -> List[str]:
     if version is None:
         version = sys.version_info
     if version >= (3, 10):
