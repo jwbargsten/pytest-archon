@@ -79,7 +79,4 @@ We're figuring this out.
 
 * [Archunit](https://www.archunit.org/) (Java)
 * [Dependency Cruiser](https://github.com/sverweij/dependency-cruiser) (Javascript)
-<<<<<<< Updated upstream
-=======
 * [Import Linter](https://github.com/seddonym/import-linter) (Python)
->>>>>>> Stashed changes
