@@ -18,6 +18,15 @@ def walk_ast(tree, package=None, path=None):
     return modules
 
 
+def test_namespace_pkgs(create_testset):
+    path = create_testset(
+        ("package/__init__.py", ""),
+        ("package/initless/module.py", "A=3"),
+    )
+    res = resolve_module_or_object("package.initless.module.A", path=[str(path)])
+    assert res == "package.initless.module"
+
+
 def test_ast_walk(create_testset):
     path = create_testset(
         ("pkgA/subpkg2/moduleZ.py", ""),

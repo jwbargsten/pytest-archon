@@ -7,9 +7,9 @@ from importlib.machinery import PathFinder
 # https://github.com/0cjs/sedoc/blob/master/lang/python/importers.md
 
 
-def find_spec(fqname, path=None):
+def find_spec(fqname, path=None, with_sys_modules=True):
     # taken from importlib.util.find_spec
-    if fqname in sys.modules:
+    if with_sys_modules and fqname in sys.modules:
         module = sys.modules[fqname]
         if module is None:
             return None

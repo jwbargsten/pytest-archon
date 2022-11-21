@@ -8,6 +8,8 @@ from typing import Iterable
 from py3arch.core_modules import list_core_modules
 from py3arch.import_finder import resolve_import_from, resolve_module_or_object, explode_import
 
+import re
+
 
 def collect_modules(base_path: Path, package: str = ".") -> Iterable[tuple[str, str]]:
     for py_file in base_path.glob(f"{package}/**/*.py"):
@@ -19,9 +21,11 @@ def collect_modules(base_path: Path, package: str = ".") -> Iterable[tuple[str, 
 
 def path_to_module(module_path: Path, base_path: Path) -> str:
     rel_path = module_path.relative_to(base_path)
-    return ".".join(
+    module = ".".join(
         rel_path.parent.parts if rel_path.stem == "__init__" else rel_path.parent.parts + (rel_path.stem,)
     )
+    return re.sub(r"\.+", '.', module)
+
 
 
 def find_imports(
