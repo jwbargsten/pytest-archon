@@ -24,8 +24,7 @@ def path_to_module(module_path: Path, base_path: Path) -> str:
     module = ".".join(
         rel_path.parent.parts if rel_path.stem == "__init__" else rel_path.parent.parts + (rel_path.stem,)
     )
-    return re.sub(r"\.+", '.', module)
-
+    return re.sub(r"\.+", ".", module)
 
 
 def find_imports(
@@ -49,13 +48,35 @@ def find_imports(
                     yield fqname
 
 
+def collect_modules2(base_path: Path, package: str) -> Iterable[tuple[str, str]]:
+    for py_file in base_path.glob("**/*.py"):
+        module_name = path_to_module(py_file, base_path)
+        module_name = f"{package}.{module_name}"
+        tree = ast.parse(py_file.read_bytes())
+        imported_iter = find_imports(tree, module_name, sys.path + [str(base_path)])
+        yield module_name, set(imported_iter)
+
+
 def collect_from_pkg(module):
     core_modules = list_core_modules()
     if not hasattr(module, "__path__"):
         raise AttributeError("module {name} does not have __path__".format(name=module.__name__))
     all_imports = {}
     for path in [Path(p) for p in module.__path__]:
-        for name, imports in collect_modules(path.parent, path.name):
+        for name, imports in collect_modules2(path, module.__name__):
+            direct_imports = {i for i in imports if i != name and i not in core_modules}
+            if name in all_imports:
+                raise KeyError("WTF? duplicate module {}".format(name))
+            all_imports[name] = {"direct": direct_imports}
+    _update_with_transitive_imports(all_imports)
+    return all_imports
+
+
+def collect_from_pkg2(path, package):
+    core_modules = list_core_modules()
+    all_imports = {}
+    for path in [Path(p) for p in path]:
+        for name, imports in collect_modules(path.parent, package):
             direct_imports = {i for i in imports if i != name and i not in core_modules}
             if name in all_imports:
                 raise KeyError("WTF? duplicate module {}".format(name))

@@ -20,8 +20,10 @@ def test_collect_with_system_modules(create_testset):
     assert "sys" in imports
     assert "os" in imports
 
+
 def test_path_to_module():
     assert path_to_module(Path("a/b/./c/d/../e"), Path("a/b/c")) == "d.e"
+
 
 def test_module_imports_other_module(create_testset):
 
