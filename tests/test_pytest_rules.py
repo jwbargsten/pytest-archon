@@ -1,5 +1,6 @@
 from py3arch.pytest.plugin import rule
 
+
 def test_rules2():
     (
         rule("abc", "def")

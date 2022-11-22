@@ -1,5 +1,4 @@
 import os
-import sys
 import ast
 import re
 
@@ -14,15 +13,20 @@ from py3arch.core_modules import list_core_modules
 from importlib.util import find_spec
 
 # https://docs.djangoproject.com/en/4.1/_modules/django/utils/module_loading/
+# https://stackoverflow.com/questions/54325116/can-i-handle-imports-in-an-abstract-syntax-tree
+# https://bugs.python.org/issue38721
+# https://github.com/0cjs/sedoc/blob/master/lang/python/importers.md
 
 CORE_MODULES = list_core_modules()
 
-def collect_imports_per_file(path, package):
-    for py_file in Path(path).glob(f"**/*.py"):
+
+def collect_imports_from_path(path, package):
+    for py_file in Path(path).glob("**/*.py"):
         module_name = path_to_module(py_file, path, package)
         tree = ast.parse(py_file.read_bytes())
         import_it = extract_imports_ast(tree, module_name)
         yield module_name, set(import_it)
+
 
 def collect_imports(package):
     if isinstance(package, ModuleType):
@@ -37,14 +41,13 @@ def collect_imports(package):
 
     pkg_dir = os.path.dirname(spec.origin)
 
-    for name, imports in collect_imports_per_file(pkg_dir, package):
+    for name, imports in collect_imports_from_path(pkg_dir, package):
         direct_imports = {imp for imp in imports if imp != name}
         if name in all_imports:
             raise KeyError("WTF? duplicate module {}".format(name))
         all_imports[name] = {"direct": direct_imports}
     update_with_transitive_imports(all_imports)
     return all_imports
-
 
 
 def path_to_module(module_path: Path, base_path: Path, package=None) -> str:
@@ -63,9 +66,7 @@ def path_to_module(module_path: Path, base_path: Path, package=None) -> str:
     return re.sub(r"\.+", ".", module)
 
 
-def extract_imports_ast(
-    tree, package: str, resolve=True
-) -> Iterable[str]:
+def extract_imports_ast(tree, package: str, resolve=True) -> Iterable[str]:
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
@@ -77,7 +78,6 @@ def extract_imports_ast(
                     yield resolve_module_or_object(fqname)
                 else:
                     yield fqname
-
 
 
 def update_with_transitive_imports(data):
@@ -108,19 +108,11 @@ def update_with_transitive_imports(data):
         imports["is_circular"] = is_circular
 
 
-# https://stackoverflow.com/questions/54325116/can-i-handle-imports-in-an-abstract-syntax-tree
-# https://bugs.python.org/issue38721
-# https://github.com/0cjs/sedoc/blob/master/lang/python/importers.md
-
-
-def resolve_module_or_object(fqname, path=None):
-    if path is None:
-        path = sys.path
-
+def resolve_module_or_object(fqname):
     if fqname in CORE_MODULES:
         return fqname
 
-    parent_name = fqname.rpartition('.')[0]
+    parent_name = fqname.rpartition(".")[0]
 
     # shortcut to deal with e.g. from __future__ import annotations
     if parent_name in CORE_MODULES:
@@ -128,9 +120,9 @@ def resolve_module_or_object(fqname, path=None):
 
     spec = None
     try:
-        spec = importlib.util.find_spec(fqname, path)
+        spec = importlib.util.find_spec(fqname)
     except ModuleNotFoundError as ex:
-        parent_spec = importlib.util.find_spec(parent_name, path)
+        parent_spec = importlib.util.find_spec(parent_name)
         # if we cannot find the parent, then something is off
         if not parent_spec:
             raise ex

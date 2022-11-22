@@ -1,5 +1,4 @@
 import ast
-import sys
 from textwrap import dedent
 
 from py3arch.collect import extract_imports_ast
@@ -21,7 +20,7 @@ def test_parse():
     assert "sys" in imports
 
 
-def test_parse_relative_imports(create_testset):
+def test_parse_relative_imports(create_testset, monkeypatch):
     path = create_testset(
         ("pkgA/subpkg2/moduleZ.py", ""),
         ("pkgA/subpkg2/__init__.py", ""),
@@ -52,11 +51,9 @@ def test_parse_relative_imports(create_testset):
         """
     )
 
+    monkeypatch.syspath_prepend(path)
     root = ast.parse(code)
-    old_sys_path = sys.path[:]
-    sys.path.append(str(path))
     imports = set(extract_imports_ast(root, "pkgA.subpkg1.subpkg1a"))
-    sys.path = old_sys_path
 
     assert imports == {
         "datetime",

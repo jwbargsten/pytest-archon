@@ -1,11 +1,17 @@
-from py3arch.collect import  path_to_module, collect_imports_per_file, collect_imports
-import py3arch
+import pytest
+from py3arch.collect import (
+    path_to_module,
+    collect_imports_from_path,
+    collect_imports,
+    resolve_module_or_object,
+)
+import time
 from pathlib import Path
 
 
 def test_collect_modules(create_testset):
     path = create_testset(("mymodule.py", ""))
-    collected = list(name for name, _ in collect_imports_per_file(path, "pkg"))
+    collected = list(name for name, _ in collect_imports_from_path(path, "pkg"))
     assert "pkg.mymodule" in collected
 
 
@@ -13,7 +19,7 @@ def test_collect_with_system_modules(create_testset):
 
     path = create_testset(("mymodule.py", "import sys, os"))
 
-    name, imports = next(collect_imports_per_file(path, "pkg"))
+    name, imports = next(collect_imports_from_path(path, "pkg"))
 
     assert name == "pkg.mymodule"
     assert "sys" in imports
@@ -29,7 +35,7 @@ def test_module_imports_other_module(create_testset, monkeypatch):
     path = create_testset(("module.py", ""), ("othermodule.py", "import module"))
     monkeypatch.syspath_prepend(str(path))
 
-    module_names = {i for name, imports in collect_imports_per_file(path, "pkg") for i in imports}
+    module_names = {i for name, imports in collect_imports_from_path(path, "pkg") for i in imports}
 
     assert "module" in module_names
     assert "othermodule" not in module_names
@@ -40,17 +46,19 @@ def test_module_import_from(create_testset, monkeypatch):
     path = create_testset(("module.py", "val = 1"), ("othermodule.py", "from module import val"))
     monkeypatch.syspath_prepend(str(path))
 
-    module_names = {i for name, imports in collect_imports_per_file(path, "pkg") for i in imports}
+    module_names = {i for name, imports in collect_imports_from_path(path, "pkg") for i in imports}
     assert module_names == {"module"}
 
 
 def test_module_import_nested_modules(create_testset):
 
     path = create_testset(
-        ("package/__init__.py", ""), ("package/module.py", ""), ("package/othermodule.py", "import package.module")
+        ("package/__init__.py", ""),
+        ("package/module.py", ""),
+        ("package/othermodule.py", "import package.module"),
     )
 
-    module_names = {i for name, imports in collect_imports_per_file(path, "package") for i in imports}
+    module_names = {i for name, imports in collect_imports_from_path(path, "package") for i in imports}
 
     assert "package.module" in module_names
     assert "package.othermodule" not in module_names
@@ -68,12 +76,38 @@ def test_relative_imports(create_testset, monkeypatch):
     )
     monkeypatch.syspath_prepend(str(path))
 
-    print(list(collect_imports_per_file(path / "package", "package")))
-    module_names = {i for name, imports in collect_imports_per_file(path / "package", "package") for i in imports}
+    module_names = {
+        i for name, imports in collect_imports_from_path(path / "package", "package") for i in imports
+    }
 
     assert "package.importme" in module_names
 
 
-def test_collect_pkg():
-    data = collect_imports(py3arch)
-    assert "py3arch.core_modules" in data["py3arch"]["transitive"]
+def test_collect_pkg(create_testset, monkeypatch):
+    path = create_testset(
+        ("abcz/__init__.py", ""),
+        ("abcz/moduleA.py", "import abcz.moduleB"),
+        ("abcz/moduleB.py", "import abcz.moduleC"),
+        ("abcz/moduleC.py", ""),
+    )
+    monkeypatch.syspath_prepend(str(path))
+    data = collect_imports("abcz")
+    assert "abcz.moduleC" in data["abcz.moduleA"]["transitive"]
+
+
+@pytest.mark.xfail
+def test_namespace_pkgs(create_testset, monkeypatch):
+    path = create_testset(
+        ("package/__init__.py", ""),
+        ("package/initless/module.py", "A=3"),
+    )
+
+    monkeypatch.syspath_prepend(str(path))
+    time.sleep(1)
+    res = resolve_module_or_object("package.initless.module.A")
+    assert res == "package.initless.module"
+
+
+def test_resolve_module_or_object():
+    res = resolve_module_or_object("fnmatch.fnmatch")
+    assert res == "fnmatch"

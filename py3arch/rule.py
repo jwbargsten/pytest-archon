@@ -15,7 +15,6 @@ def rule(ruleset, module, imported) -> str | None:
 
     The rules should be sound.
     """
-
     for pat, rules in ruleset.items():
         if not lhs_matches(module, pat):
             continue
@@ -27,7 +26,7 @@ def rule(ruleset, module, imported) -> str | None:
             if (c := rhs_matches(imported, rule)) is ALLOWED:
                 return None
             elif c is DENIED:
-                return f"Import '{imported}' is not allows in '{module}' (rule: '{pat} => {rule}')"
+                return f"Import '{imported}' is forbidden in '{module}' (rule: '{pat} => {rule}')"
 
     # No rule matches.
     # TODO: What is our default? Should we add a 'strict' option?
