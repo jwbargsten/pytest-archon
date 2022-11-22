@@ -61,6 +61,7 @@ class RuleConstraints:
         return self
 
     def check(self, package, path=None):
+        rule_name = self.rule.name
         if path is not None:
             sys.path.append(path) if isinstance(path, str) else sys.path.extend(path)
 
@@ -76,7 +77,12 @@ class RuleConstraints:
             imports = all_imports[c].get("direct", []) | all_imports[c].get("transitive", [])
             for constraint in self.required:
                 matches = [imp for imp in imports if re.search(constraint, imp)]
-                check.is_true(matches, f"module {c} did not import anything that matches /{constraint}/")
+                check.is_true(
+                    matches, f"{rule_name}: module {c} did not import anything that matches /{constraint}/"
+                )
             for constraint in self.forbidden:
                 matches = [imp for imp in imports if re.search(constraint, imp)]
-                check.is_false(matches, f"module {c} has forbidden imports {matches} (rule /{constraint}/)")
+                matches_s = ", ".join(matches)
+                check.is_false(
+                    matches, f"{rule_name}: module {c} has forbidden imports {matches_s} (/{constraint}/)"
+                )
