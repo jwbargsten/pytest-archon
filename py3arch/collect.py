@@ -1,34 +1,72 @@
-from __future__ import annotations
-
+import os
 import ast
-import sys
+import re
+
+from types import ModuleType
+import importlib
+import importlib.util
+
 from pathlib import Path
 from typing import Iterable
 
 from py3arch.core_modules import list_core_modules
-from py3arch.import_finder import resolve_import_from, resolve_module_or_object, explode_import
+from importlib.util import find_spec
+
+# https://docs.djangoproject.com/en/4.1/_modules/django/utils/module_loading/
+# https://stackoverflow.com/questions/54325116/can-i-handle-imports-in-an-abstract-syntax-tree
+# https://bugs.python.org/issue38721
+# https://github.com/0cjs/sedoc/blob/master/lang/python/importers.md
+
+CORE_MODULES = list_core_modules()
 
 
-def collect_modules(base_path: Path, package: str = ".") -> Iterable[tuple[str, str]]:
-    for py_file in base_path.glob(f"{package}/**/*.py"):
-        module_name = path_to_module(py_file, base_path)
+def collect_imports_from_path(path, package):
+    for py_file in Path(path).glob("**/*.py"):
+        module_name = path_to_module(py_file, path, package)
         tree = ast.parse(py_file.read_bytes())
-        imported_iter = find_imports(tree, module_name, sys.path + [str(base_path)])
-        yield module_name, set(imported_iter)
+        import_it = extract_imports_ast(tree, module_name)
+        yield module_name, set(import_it)
 
 
-def path_to_module(module_path: Path, base_path: Path) -> str:
+def collect_imports(package):
+    if isinstance(package, ModuleType):
+        if not hasattr(package, "__path__"):
+            raise AttributeError("module {name} does not have __path__".format(name=package.__name__))
+        package = package.__name__
+
+    all_imports = {}
+    spec = find_spec(package)
+    if not spec:
+        raise ModuleNotFoundError(f"could not find the module {package!r}", name=package)
+
+    pkg_dir = os.path.dirname(spec.origin)
+
+    for name, imports in collect_imports_from_path(pkg_dir, package):
+        direct_imports = {imp for imp in imports if imp != name}
+        if name in all_imports:
+            raise KeyError("WTF? duplicate module {}".format(name))
+        all_imports[name] = {"direct": direct_imports}
+    update_with_transitive_imports(all_imports)
+    return all_imports
+
+
+def path_to_module(module_path: Path, base_path: Path, package=None) -> str:
     rel_path = module_path.relative_to(base_path)
-    return ".".join(
-        rel_path.parent.parts if rel_path.stem == "__init__" else rel_path.parent.parts + (rel_path.stem,)
-    )
+
+    if package:
+        parts = [package]
+    else:
+        parts = []
+    parts.extend(rel_path.parent.parts)
+
+    if rel_path.stem != "__init__":
+        parts.append(rel_path.stem)
+    module = ".".join(parts)
+    # some very basic sanitation
+    return re.sub(r"\.+", ".", module)
 
 
-def find_imports(
-    tree, package: str, path: Iterable[str] = None, resolve=True, explode=False
-) -> Iterable[str]:
-    if path is None:
-        path = sys.path
+def extract_imports_ast(tree, package: str, resolve=True) -> Iterable[str]:
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
@@ -37,30 +75,12 @@ def find_imports(
             for alias in node.names:
                 fqname = resolve_import_from(alias.name, node.module, package=package, level=node.level)
                 if resolve:
-                    fqname = resolve_module_or_object(fqname, path=path)
-                if explode:
-                    for i in explode_import(fqname):
-                        yield i
+                    yield resolve_module_or_object(fqname)
                 else:
                     yield fqname
 
 
-def collect_from_pkg(module):
-    core_modules = list_core_modules()
-    if not hasattr(module, "__path__"):
-        raise AttributeError("module {name} does not have __path__".format(name=module.__name__))
-    all_imports = {}
-    for path in [Path(p) for p in module.__path__]:
-        for name, imports in collect_modules(path.parent, path.name):
-            direct_imports = {i for i in imports if i != name and i not in core_modules}
-            if name in all_imports:
-                raise KeyError("WTF? duplicate module {}".format(name))
-            all_imports[name] = {"direct": direct_imports}
-    _update_with_transitive_imports(all_imports)
-    return all_imports
-
-
-def _update_with_transitive_imports(data):
+def update_with_transitive_imports(data):
     for name, imports in data.items():
         transitive = []
         is_circular = False
@@ -86,3 +106,51 @@ def _update_with_transitive_imports(data):
 
         imports["transitive"] = set(transitive) - imports["direct"]
         imports["is_circular"] = is_circular
+
+
+def resolve_module_or_object(fqname):
+    if fqname in CORE_MODULES:
+        return fqname
+
+    parent_name = fqname.rpartition(".")[0]
+
+    # shortcut to deal with e.g. from __future__ import annotations
+    if parent_name in CORE_MODULES:
+        return parent_name
+
+    spec = None
+    try:
+        spec = importlib.util.find_spec(fqname)
+    except ModuleNotFoundError as ex:
+        parent_spec = importlib.util.find_spec(parent_name)
+        # if we cannot find the parent, then something is off
+        if not parent_spec:
+            raise ex
+
+    return fqname if spec else fqname.rpartition(".")[0]
+
+
+# TODO replace with importlib.util.resolve_name ?
+def resolve_import_from(name, module=None, package=None, level=None):
+    if not level:
+        # absolute import
+        if name == "*":
+            return module
+        return name if module is None else f"{module}.{name}"
+
+    # taken from importlib._bootstrap._resolve_name
+    bits = package.rsplit(".", level)
+    if len(bits) < level:
+        raise ImportError("attempted relative import beyond top-level package")
+    base = bits[0]
+
+    # relative import
+    if module is None:
+        # from . import moduleX
+        prefix = base
+    else:
+        # from .moduleZ import moduleX
+        prefix = f"{base}.{module}"
+    if name == "*":
+        return prefix
+    return f"{prefix}.{name}"

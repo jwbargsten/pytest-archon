@@ -9,10 +9,10 @@ def test_read_legacy():
     assert "__future__" in modules
 
 
+@pytest.mark.skipif(sys.version_info < (3, 10), reason="requires python3.10 or higher")
 def test_read():
-    if sys.version_info >= (3, 10):
-        modules = cm.list_core_modules((3, 10))
-        assert "__future__" in modules
+    modules = cm.list_core_modules((3, 10))
+    assert "__future__" in modules
 
 
 def test_read_error():

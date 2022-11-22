@@ -21,7 +21,8 @@ classifiers = [
     "Framework :: Pytest",
 ]
 dependencies = [
-    'tomli; python_version<"3.11"'
+    'tomli; python_version<"3.11"',
+    "pytest-check",
 ]
 dynamic = ["version"]
 
@@ -48,4 +49,4 @@ addopts = [
 ]
 
 [project.entry-points.pytest11]
-py3arch = "py3arch.pytest_py3arch"
+py3arch = "py3arch.pytest.plugin"

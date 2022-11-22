@@ -58,6 +58,8 @@ source = "py3arch"
 "py3arch.collect" = [ "not py3arch.rule" ]
 ```
 
+(don't forget the quotes (`"`), otherwise it will not work)
+
 In the above example, py3arch will examine the source files in the `py3arch` package.
 The module `py3arch.collect` is not supposed to access the module `py3arch.rule`.
 
@@ -79,4 +81,4 @@ We're figuring this out.
 
 * [Archunit](https://www.archunit.org/) (Java)
 * [Dependency Cruiser](https://github.com/sverweij/dependency-cruiser) (Javascript)
-* [Import Linter](https://github.com/seddonym/import-linter) (Python)
+* [import-linter](https://github.com/seddonym/import-linter) (Python)
