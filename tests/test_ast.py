@@ -53,7 +53,10 @@ def test_parse_relative_imports(create_testset):
     )
 
     root = ast.parse(code)
-    imports = set(extract_imports_ast(root, "pkgA.subpkg1.subpkg1a", path=[str(path)] + sys.path))
+    old_sys_path = sys.path[:]
+    sys.path.append(str(path))
+    imports = set(extract_imports_ast(root, "pkgA.subpkg1.subpkg1a"))
+    sys.path = old_sys_path
 
     assert imports == {
         "datetime",

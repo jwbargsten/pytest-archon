@@ -2,7 +2,7 @@ import optparse
 import sys
 from pathlib import Path
 
-from py3arch.collect import collect_modules
+from py3arch.collect import collect_imports_per_file
 from py3arch.config import read_options, read_rules
 from py3arch.rule import rule
 
@@ -27,7 +27,7 @@ def main(argv=sys.argv) -> int:
     package = args[1] if len(args) > 1 else options.get("source", ".")
     src_path = Path(options.get("base", base_path))
 
-    mapping = collect_modules(src_path, package)
+    mapping = collect_imports_per_file(src_path / package, package)
     voilations = [
         voilation for module, imports in mapping for i in imports if (voilation := rule(rules, module, i))
     ]

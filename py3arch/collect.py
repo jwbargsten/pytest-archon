@@ -1,17 +1,19 @@
 import os
 import sys
+import ast
+import re
+
+from types import ModuleType
 import importlib
 import importlib.util
 
-from py3arch import list_core_modules
-from py3arch.core_modules import list_core_modules
-import ast
-from importlib.util import find_spec
-
-import ast
 from pathlib import Path
 from typing import Iterable
-import re
+
+from py3arch.core_modules import list_core_modules
+from importlib.util import find_spec
+
+# https://docs.djangoproject.com/en/4.1/_modules/django/utils/module_loading/
 
 CORE_MODULES = list_core_modules()
 
@@ -23,6 +25,11 @@ def collect_imports_per_file(path, package):
         yield module_name, set(import_it)
 
 def collect_imports(package):
+    if isinstance(package, ModuleType):
+        if not hasattr(package, "__path__"):
+            raise AttributeError("module {name} does not have __path__".format(name=package.__name__))
+        package = package.__name__
+
     all_imports = {}
     spec = find_spec(package)
     if not spec:

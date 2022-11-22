@@ -1,25 +1,12 @@
-from pathlib import Path
 from pytest_check import check
-import os
 import sys
-import ast
-from importlib.util import find_spec
-
 import re
-from types import ModuleType
-from py3arch.collect import update_with_transitive_imports, path_to_module, extract_imports_ast
-from py3arch.core_modules import list_core_modules
+
+from py3arch.collect import collect_imports
+
 
 # https://peps.python.org/pep-0451/
 # the path is the package path: where the submodules are in
-def _resolve_package(package):
-    if isinstance(package, ModuleType):
-        if not hasattr(package, "__path__"):
-            raise AttributeError("module {name} does not have __path__".format(name=package.__name__))
-        return package.__name__
-    else:
-        return package
-
 class Rule:
     def __init__(self, name, comment):
         self.name = name
@@ -77,7 +64,7 @@ class RuleConstraints:
         if path is not None:
             sys.path.append(path) if isinstance(path, str) else sys.path.extend(path)
 
-        all_imports = _collect_imports(package)
+        all_imports = collect_imports(package)
 
         candidates = []
         for mp in self.targets.match_criteria:
