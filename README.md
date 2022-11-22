@@ -75,7 +75,27 @@ Modules can be combined, by separating them with a comma: `module,othermodule`.
 
 ### Tests
 
-We're figuring this out.
+You can use py3arch in tests by simply importing the `rule` function. Using this
+function you can construct import tests:
+
+```
+from py3arch.pytest.plugin import rule
+
+
+def test_rule_basic():
+    (
+        rule("name", comment="some comment")
+        .match("py3arch.col*")
+        .except("py3arch.colgate")
+        .should_not_import("py3arch.import_finder")
+        .should_import("py3arch.core*")
+        .check("module", path=["/path/to/base/dir"])
+    )
+```
+
+To match the modules and constraints,
+[fnmatch](https://docs.python.org/3/library/fnmatch.html) syntax is used.
+
 
 ## Similar projects
 

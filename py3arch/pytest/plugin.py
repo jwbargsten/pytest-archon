@@ -1,6 +1,6 @@
 from pytest_check import check
 import sys
-import re
+from fnmatch import fnmatch
 
 from py3arch.collect import collect_imports
 
@@ -66,23 +66,31 @@ class RuleConstraints:
             sys.path.append(path) if isinstance(path, str) else sys.path.extend(path)
 
         all_imports = collect_imports(package)
+        match_criteria = self.targets.match_criteria
+        exclude_criteria = self.targets.exclude_criteria
 
         candidates = []
-        for mp in self.targets.match_criteria:
-            candidates.extend([k for k in all_imports.keys() if re.search(mp, k)])
-        for ep in self.targets.exclude_criteria:
-            candidates = [k for k in candidates if not re.search(ep, k)]
+        for mp in match_criteria:
+            candidates.extend([k for k in all_imports.keys() if fnmatch(k, mp)])
+        for ep in exclude_criteria:
+            candidates = [k for k in candidates if not fnmatch(k, ep)]
+
+        check.is_true(
+            candidates,
+            f"No candidates matched. match criteria: {match_criteria}, exclude_criteria: {exclude_criteria}",
+        )
+        print(f"rule {rule_name}: candidates are {candidates}")
 
         for c in candidates:
             imports = all_imports[c].get("direct", []) | all_imports[c].get("transitive", [])
             for constraint in self.required:
-                matches = [imp for imp in imports if re.search(constraint, imp)]
+                matches = [imp for imp in imports if fnmatch(imp, constraint)]
                 check.is_true(
                     matches,
                     f"rule {rule_name}: module {c} did not import anything that matches /{constraint}/",
                 )
             for constraint in self.forbidden:
-                matches = [imp for imp in imports if re.search(constraint, imp)]
+                matches = [imp for imp in imports if fnmatch(imp, constraint)]
                 check.is_false(
                     matches, f"rule {rule_name}: module {c} has forbidden imports {matches} (/{constraint}/)"
                 )

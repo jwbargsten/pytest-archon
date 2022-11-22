@@ -4,22 +4,24 @@ from py3arch.pytest.plugin import rule
 def test_rule_basic():
     (
         rule("abc", "def")
-        .match(r"collect")
+        .match("*collect")
         .should_not_import("py3arch.import_finder")
         .check("py3arch", path=["."])
     )
 
 
 def test_rule_fail(pytester):
-
     pytester.makepyfile(
         """
+        from py3arch.pytest.plugin import rule
+        import py3arch
+
         def test_rule_fail():
             (
                 rule("abc", "def")
-                .match(r"collect")
-                .should_not_import("importlib")
-                .check("py3arch", path=["."])
+                .match("*collect")
+                .should_not_import("importl*")
+                .check(py3arch)
             )
     """
     )
