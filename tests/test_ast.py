@@ -2,7 +2,7 @@ import ast
 import sys
 from textwrap import dedent
 
-from py3arch.collect import find_imports
+from py3arch.collect import extract_imports_ast
 
 
 def test_parse():
@@ -14,7 +14,7 @@ def test_parse():
     )
 
     root = ast.parse(code, "test_parse.py")
-    imports = list(find_imports(root, ""))
+    imports = list(extract_imports_ast(root, ""))
 
     # Should this be os.path?
     assert "os.path" in imports
@@ -53,7 +53,7 @@ def test_parse_relative_imports(create_testset):
     )
 
     root = ast.parse(code)
-    imports = set(find_imports(root, "pkgA.subpkg1.subpkg1a", path=[str(path)] + sys.path))
+    imports = set(extract_imports_ast(root, "pkgA.subpkg1.subpkg1a", path=[str(path)] + sys.path))
 
     assert imports == {
         "datetime",

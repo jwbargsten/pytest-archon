@@ -1,4 +1,3 @@
-import pytest
 from pathlib import Path
 from pytest_check import check
 import os
@@ -8,8 +7,7 @@ from importlib.util import find_spec
 
 import re
 from types import ModuleType
-from py3arch.import_finder import find_spec
-from py3arch.collect import collect_modules,update_with_transitive_imports, path_to_module, find_imports
+from py3arch.collect import update_with_transitive_imports, path_to_module, extract_imports_ast
 from py3arch.core_modules import list_core_modules
 
 # https://peps.python.org/pep-0451/
@@ -21,30 +19,6 @@ def _resolve_package(package):
         return package.__name__
     else:
         return package
-
-def collect_files(path, package):
-     for py_file in Path(path).glob(f"**/*.py"):
-        module_name = path_to_module(py_file, path, package)
-        tree = ast.parse(py_file.read_bytes())
-        import_it = find_imports(tree, module_name)
-        yield module_name, set(import_it)
-
-def _collect_imports(package):
-    core_modules = list_core_modules()
-    all_imports = {}
-    spec = find_spec(package)
-    if not spec:
-        raise ModuleNotFoundError("FIXME")
-
-    pkg_dir = os.path.dirname(spec.origin)
-
-    for name, imports in collect_files(pkg_dir, package):
-        direct_imports = {i for i in imports if i != name and i not in core_modules}
-        if name in all_imports:
-            raise KeyError("WTF? duplicate module {}".format(name))
-        all_imports[name] = {"direct": direct_imports}
-    update_with_transitive_imports(all_imports)
-    return all_imports
 
 class Rule:
     def __init__(self, name, comment):

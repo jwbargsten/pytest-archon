@@ -1,22 +1,43 @@
-from __future__ import annotations
+import os
+import sys
+import importlib
+import importlib.util
+
+from py3arch import list_core_modules
+from py3arch.core_modules import list_core_modules
+import ast
+from importlib.util import find_spec
 
 import ast
-import sys
 from pathlib import Path
 from typing import Iterable
-
-from py3arch.core_modules import list_core_modules
-from py3arch.import_finder import resolve_import_from, resolve_module_or_object, explode_import
-
 import re
 
+CORE_MODULES = list_core_modules()
 
-def collect_modules(base_path: Path, package: str = ".") -> Iterable[tuple[str, str]]:
-    for py_file in base_path.glob(f"{package}/**/*.py"):
-        module_name = path_to_module(py_file, base_path)
+def collect_imports_per_file(path, package):
+    for py_file in Path(path).glob(f"**/*.py"):
+        module_name = path_to_module(py_file, path, package)
         tree = ast.parse(py_file.read_bytes())
-        imported_iter = find_imports(tree, module_name, sys.path + [str(base_path)])
-        yield module_name, set(imported_iter)
+        import_it = extract_imports_ast(tree, module_name)
+        yield module_name, set(import_it)
+
+def collect_imports(package):
+    all_imports = {}
+    spec = find_spec(package)
+    if not spec:
+        raise ModuleNotFoundError("FIXME")
+
+    pkg_dir = os.path.dirname(spec.origin)
+
+    for name, imports in collect_imports_per_file(pkg_dir, package):
+        direct_imports = {imp for imp in imports if imp != name}
+        if name in all_imports:
+            raise KeyError("WTF? duplicate module {}".format(name))
+        all_imports[name] = {"direct": direct_imports}
+    update_with_transitive_imports(all_imports)
+    return all_imports
+
 
 
 def path_to_module(module_path: Path, base_path: Path, package=None) -> str:
@@ -35,8 +56,8 @@ def path_to_module(module_path: Path, base_path: Path, package=None) -> str:
     return re.sub(r"\.+", ".", module)
 
 
-def find_imports(
-    tree, package: str, path: Iterable[str] = None, resolve=True, explode=False
+def extract_imports_ast(
+    tree, package: str, resolve=True
 ) -> Iterable[str]:
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
@@ -46,37 +67,9 @@ def find_imports(
             for alias in node.names:
                 fqname = resolve_import_from(alias.name, node.module, package=package, level=node.level)
                 if resolve:
-                    fqname = resolve_module_or_object(fqname)
-                if explode:
-                    for i in explode_import(fqname):
-                        yield i
+                    yield resolve_module_or_object(fqname)
                 else:
                     yield fqname
-
-
-def collect_modules2(base_path: Path, package: str) -> Iterable[tuple[str, str]]:
-    for py_file in base_path.glob("**/*.py"):
-        module_name = path_to_module(py_file, base_path)
-        module_name = f"{package}.{module_name}"
-        tree = ast.parse(py_file.read_bytes())
-        imported_iter = find_imports(tree, module_name, sys.path + [str(base_path)])
-        yield module_name, set(imported_iter)
-
-
-def collect_from_pkg(module):
-    core_modules = list_core_modules()
-    if not hasattr(module, "__path__"):
-        raise AttributeError("module {name} does not have __path__".format(name=module.__name__))
-    all_imports = {}
-    for path in [Path(p) for p in module.__path__]:
-        for name, imports in collect_modules2(path, module.__name__):
-            direct_imports = {i for i in imports if i != name and i not in core_modules}
-            if name in all_imports:
-                raise KeyError("WTF? duplicate module {}".format(name))
-            all_imports[name] = {"direct": direct_imports}
-    update_with_transitive_imports(all_imports)
-    return all_imports
-
 
 
 
@@ -106,3 +99,59 @@ def update_with_transitive_imports(data):
 
         imports["transitive"] = set(transitive) - imports["direct"]
         imports["is_circular"] = is_circular
+
+
+# https://stackoverflow.com/questions/54325116/can-i-handle-imports-in-an-abstract-syntax-tree
+# https://bugs.python.org/issue38721
+# https://github.com/0cjs/sedoc/blob/master/lang/python/importers.md
+
+
+def resolve_module_or_object(fqname, path=None):
+    if path is None:
+        path = sys.path
+
+    if fqname in CORE_MODULES:
+        return fqname
+
+    parent_name = fqname.rpartition('.')[0]
+
+    # shortcut to deal with e.g. from __future__ import annotations
+    if parent_name in CORE_MODULES:
+        return parent_name
+
+    spec = None
+    try:
+        spec = importlib.util.find_spec(fqname, path)
+    except ModuleNotFoundError as ex:
+        parent_spec = importlib.util.find_spec(parent_name, path)
+        # if we cannot find the parent, then something is off
+        if not parent_spec:
+            raise ex
+
+    return fqname if spec else fqname.rpartition(".")[0]
+
+
+# TODO replace with importlib.util.resolve_name ?
+def resolve_import_from(name, module=None, package=None, level=None):
+    if not level:
+        # absolute import
+        if name == "*":
+            return module
+        return name if module is None else f"{module}.{name}"
+
+    # taken from importlib._bootstrap._resolve_name
+    bits = package.rsplit(".", level)
+    if len(bits) < level:
+        raise ImportError("attempted relative import beyond top-level package")
+    base = bits[0]
+
+    # relative import
+    if module is None:
+        # from . import moduleX
+        prefix = base
+    else:
+        # from .moduleZ import moduleX
+        prefix = f"{base}.{module}"
+    if name == "*":
+        return prefix
+    return f"{prefix}.{name}"
