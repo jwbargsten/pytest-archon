@@ -93,8 +93,15 @@ def test_rule_basic():
     )
 ```
 
-To match the modules and constraints,
-[fnmatch](https://docs.python.org/3/library/fnmatch.html) syntax is used.
+- To match the modules and constraints,
+  [fnmatch](https://docs.python.org/3/library/fnmatch.html) syntax is used.
+- `.except()` is optional
+- `.should_import()` and `.should_not_import()` can be combined and occur multiple
+  times.
+- `.check()` needs either a module object or a string; `path` can be skipped and will be
+  derived from the module path.
+- `comment=` is currently not used, but might be in the future
+
 
 
 ## Similar projects
