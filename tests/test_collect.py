@@ -5,7 +5,6 @@ from py3arch.collect import (
     collect_imports,
     resolve_module_or_object,
 )
-import time
 from pathlib import Path
 
 
@@ -103,7 +102,6 @@ def test_namespace_pkgs(create_testset, monkeypatch):
     )
 
     monkeypatch.syspath_prepend(str(path))
-    time.sleep(1)
     res = resolve_module_or_object("package.initless.module.A")
     assert res == "package.initless.module"
 

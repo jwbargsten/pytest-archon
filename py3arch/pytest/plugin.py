@@ -78,11 +78,11 @@ class RuleConstraints:
             for constraint in self.required:
                 matches = [imp for imp in imports if re.search(constraint, imp)]
                 check.is_true(
-                    matches, f"{rule_name}: module {c} did not import anything that matches /{constraint}/"
+                    matches,
+                    f"rule {rule_name}: module {c} did not import anything that matches /{constraint}/",
                 )
             for constraint in self.forbidden:
                 matches = [imp for imp in imports if re.search(constraint, imp)]
-                matches_s = ", ".join(matches)
                 check.is_false(
-                    matches, f"{rule_name}: module {c} has forbidden imports {matches_s} (/{constraint}/)"
+                    matches, f"rule {rule_name}: module {c} has forbidden imports {matches} (/{constraint}/)"
                 )

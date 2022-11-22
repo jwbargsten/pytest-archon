@@ -2,6 +2,8 @@ from textwrap import dedent
 
 import pytest
 
+pytest_plugins = ["pytester"]
+
 
 @pytest.fixture
 def create_testset(tmp_path):

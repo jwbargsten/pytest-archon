@@ -1,7 +1,7 @@
 from py3arch.pytest.plugin import rule
 
 
-def test_rules2():
+def test_rule_basic():
     (
         rule("abc", "def")
         .match(r"collect")
@@ -10,18 +10,18 @@ def test_rules2():
     )
 
 
-def test_rules():
-    pass
-    # (
-    #     rule("always import py3arch", comment="because I want it")
-    #     .for_module(r".*")
-    #     .without_module("special.module")
-    #     .should_import("py3arch")
-    # )
+def test_rule_fail(pytester):
 
-    # (
-    #     rule("never import py3arch", comment="because I want it")
-    #     .for_module(r".*")
-    #     .should_not_import("py3arch")
-    # )
-    # api rule: only one module, the api, can be imported. submodules not
+    pytester.makepyfile(
+        """
+        def test_rule_fail():
+            (
+                rule("abc", "def")
+                .match(r"collect")
+                .should_not_import("importlib")
+                .check("py3arch", path=["."])
+            )
+    """
+    )
+    result = pytester.runpytest()
+    result.assert_outcomes(failed=1)

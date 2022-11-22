@@ -37,7 +37,7 @@ def collect_imports(package):
     all_imports = {}
     spec = find_spec(package)
     if not spec:
-        raise ModuleNotFoundError("FIXME")
+        raise ModuleNotFoundError(f"could not find the module {package!r}", name=package)
 
     pkg_dir = os.path.dirname(spec.origin)
 
