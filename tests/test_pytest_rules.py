@@ -1,11 +1,9 @@
 from py3arch.pytest.plugin import rule
 
 def test_rules2():
-    # x = rule("abc", "def").root("py3arch")
-    # print(vars(x))
     (
         rule("abc", "def")
-        .for_module(r"collect")
+        .match(r"collect")
         .should_not_import("py3arch.import_finder")
         .check("py3arch", path=["."])
     )

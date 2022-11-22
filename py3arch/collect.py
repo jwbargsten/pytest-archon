@@ -68,24 +68,13 @@ def collect_from_pkg(module):
             if name in all_imports:
                 raise KeyError("WTF? duplicate module {}".format(name))
             all_imports[name] = {"direct": direct_imports}
-    _update_with_transitive_imports(all_imports)
+    update_with_transitive_imports(all_imports)
     return all_imports
 
 
-def collect_from_pkg2(path, package):
-    core_modules = list_core_modules()
-    all_imports = {}
-    for path in [Path(p) for p in path]:
-        for name, imports in collect_modules(path.parent, package):
-            direct_imports = {i for i in imports if i != name and i not in core_modules}
-            if name in all_imports:
-                raise KeyError("WTF? duplicate module {}".format(name))
-            all_imports[name] = {"direct": direct_imports}
-    _update_with_transitive_imports(all_imports)
-    return all_imports
 
 
-def _update_with_transitive_imports(data):
+def update_with_transitive_imports(data):
     for name, imports in data.items():
         transitive = []
         is_circular = False

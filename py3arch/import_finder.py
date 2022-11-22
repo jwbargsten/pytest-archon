@@ -1,6 +1,7 @@
 import os
 import sys
 from importlib.machinery import PathFinder
+import importlib
 
 # https://stackoverflow.com/questions/54325116/can-i-handle-imports-in-an-abstract-syntax-tree
 # https://bugs.python.org/issue38721
