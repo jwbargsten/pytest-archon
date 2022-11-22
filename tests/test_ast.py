@@ -8,7 +8,7 @@ def test_parse():
     code = dedent(
         """\
         import sys
-        from os import path
+        from datetime import datetime
         """
     )
 
@@ -16,7 +16,7 @@ def test_parse():
     imports = list(extract_imports_ast(root, ""))
 
     # Should this be os.path?
-    assert "os.path" in imports
+    assert "datetime" in imports
     assert "sys" in imports
 
 
