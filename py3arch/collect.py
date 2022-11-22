@@ -19,19 +19,25 @@ def collect_modules(base_path: Path, package: str = ".") -> Iterable[tuple[str, 
         yield module_name, set(imported_iter)
 
 
-def path_to_module(module_path: Path, base_path: Path) -> str:
+def path_to_module(module_path: Path, base_path: Path, package=None) -> str:
     rel_path = module_path.relative_to(base_path)
-    module = ".".join(
-        rel_path.parent.parts if rel_path.stem == "__init__" else rel_path.parent.parts + (rel_path.stem,)
-    )
+
+    if package:
+        parts = [package]
+    else:
+        parts = []
+    parts.extend(rel_path.parent.parts)
+
+    if rel_path.stem != "__init__":
+        parts.append(rel_path.stem)
+    module = ".".join(parts)
+    # some very basic sanitation
     return re.sub(r"\.+", ".", module)
 
 
 def find_imports(
     tree, package: str, path: Iterable[str] = None, resolve=True, explode=False
 ) -> Iterable[str]:
-    if path is None:
-        path = sys.path
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
@@ -40,7 +46,7 @@ def find_imports(
             for alias in node.names:
                 fqname = resolve_import_from(alias.name, node.module, package=package, level=node.level)
                 if resolve:
-                    fqname = resolve_module_or_object(fqname, path=path)
+                    fqname = resolve_module_or_object(fqname)
                 if explode:
                     for i in explode_import(fqname):
                         yield i

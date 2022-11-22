@@ -2,11 +2,15 @@ import os
 import sys
 from importlib.machinery import PathFinder
 import importlib
+import importlib.util
+
+from py3arch import list_core_modules
 
 # https://stackoverflow.com/questions/54325116/can-i-handle-imports-in-an-abstract-syntax-tree
 # https://bugs.python.org/issue38721
 # https://github.com/0cjs/sedoc/blob/master/lang/python/importers.md
 
+CORE_MODULES = list_core_modules()
 
 def find_spec(fqname, path=None, with_sys_modules=True):
     # taken from importlib.util.find_spec
@@ -54,10 +58,29 @@ def find_spec(fqname, path=None, with_sys_modules=True):
 def resolve_module_or_object(fqname, path=None):
     if path is None:
         path = sys.path
-    spec = find_spec(fqname, path)
+
+    if fqname in CORE_MODULES:
+        return fqname
+
+    parent_name = fqname.rpartition('.')[0]
+
+    # shortcut to deal with e.g. from __future__ import annotations
+    if parent_name in CORE_MODULES:
+        return parent_name
+
+    spec = None
+    try:
+        spec = importlib.util.find_spec(fqname, path)
+    except ModuleNotFoundError as ex:
+        parent_spec = importlib.util.find_spec(parent_name, path)
+        # if we cannot find the parent, then something is off
+        if not parent_spec:
+            raise ex
+
     return fqname if spec else fqname.rpartition(".")[0]
 
 
+# TODO replace with importlib.util.resolve_name ?
 def resolve_import_from(name, module=None, package=None, level=None):
     if not level:
         # absolute import

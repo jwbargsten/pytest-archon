@@ -1,40 +1,48 @@
 import pytest
 from pathlib import Path
 from pytest_check import check
+import os
+import sys
+import ast
+from importlib.util import find_spec
 
 import re
 from types import ModuleType
 from py3arch.import_finder import find_spec
-from py3arch.collect import collect_modules,update_with_transitive_imports
+from py3arch.collect import collect_modules,update_with_transitive_imports, path_to_module, find_imports
 from py3arch.core_modules import list_core_modules
 
+# https://peps.python.org/pep-0451/
 # the path is the package path: where the submodules are in
-def _resolve_package(package, path=None):
+def _resolve_package(package):
     if isinstance(package, ModuleType):
         if not hasattr(package, "__path__"):
             raise AttributeError("module {name} does not have __path__".format(name=package.__name__))
-        path = package.__path__
-        package = package.__name__
-    elif path:
-        package = package
-        path = path
+        return package.__name__
     else:
-        spec = find_spec(package, path=path, with_sys_modules=False)
-        if not spec or spec.submodule_search_locations is None:
-            raise ModuleNotFoundError("error", spec)
-        path = spec.submodule_search_locations
-        package = package
-    return (package, path)
+        return package
 
-def _collect_imports(path, package):
+def collect_files(path, package):
+     for py_file in Path(path).glob(f"**/*.py"):
+        module_name = path_to_module(py_file, path, package)
+        tree = ast.parse(py_file.read_bytes())
+        import_it = find_imports(tree, module_name)
+        yield module_name, set(import_it)
+
+def _collect_imports(package):
     core_modules = list_core_modules()
     all_imports = {}
-    for path in [Path(p) for p in path]:
-        for name, imports in collect_modules(path.parent, package):
-            direct_imports = {i for i in imports if i != name and i not in core_modules}
-            if name in all_imports:
-                raise KeyError("WTF? duplicate module {}".format(name))
-            all_imports[name] = {"direct": direct_imports}
+    spec = find_spec(package)
+    if not spec:
+        raise ModuleNotFoundError("FIXME")
+
+    pkg_dir = os.path.dirname(spec.origin)
+
+    for name, imports in collect_files(pkg_dir, package):
+        direct_imports = {i for i in imports if i != name and i not in core_modules}
+        if name in all_imports:
+            raise KeyError("WTF? duplicate module {}".format(name))
+        all_imports[name] = {"direct": direct_imports}
     update_with_transitive_imports(all_imports)
     return all_imports
 
@@ -92,7 +100,10 @@ class RuleConstraints:
         return self
 
     def check(self, package, path=None):
-        all_imports = _collect_imports(package, path)
+        if path is not None:
+            sys.path.append(path) if isinstance(path, str) else sys.path.extend(path)
+
+        all_imports = _collect_imports(package)
 
         candidates = []
         for mp in self.targets.match_criteria:
