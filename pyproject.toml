@@ -23,12 +23,12 @@ classifiers = [
 dependencies = [
     'tomli; python_version<"3.11"',
     "pytest-check",
-    "pytest>=7.2",
 ]
 dynamic = ["version"]
 
 [project.optional-dependencies]
 dev = [
+    "pytest>=7.2",
     "flake8",
     "black"
 ]
