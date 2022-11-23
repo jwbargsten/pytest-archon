@@ -4,11 +4,12 @@ from textwrap import dedent
 from pytest_arch.collect import extract_imports_ast
 
 
-def test_parse():
+def test_parse_imports():
     code = dedent(
         """\
         import sys
-        from datetime import datetime
+        if True:
+            from datetime import datetime
         """
     )
 
@@ -17,6 +18,42 @@ def test_parse():
 
     # Should this be os.path?
     assert "datetime" in imports
+    assert "sys" in imports
+
+
+def test_skip_type_checking_marker():
+    code = dedent(
+        """\
+        import sys
+        from typing import TYPE_CHECKING
+        if TYPE_CHECKING:
+            from datetime import datetime
+        """
+    )
+
+    root = ast.parse(code, "test_parse.py")
+    imports = list(extract_imports_ast(root, ""))
+
+    # Should this be os.path?
+    assert "datetime" not in imports
+    assert "sys" in imports
+
+
+def test_skip_typing_dot_type_checking_marker():
+    code = dedent(
+        """\
+        import sys
+        import typing
+        if typing.TYPE_CHECKING:
+            from datetime import datetime
+        """
+    )
+
+    root = ast.parse(code, "test_parse.py")
+    imports = list(extract_imports_ast(root, ""))
+
+    # Should this be os.path?
+    assert "datetime" not in imports
     assert "sys" in imports
 
 

@@ -2,6 +2,7 @@ import ast
 import os
 import re
 import sys
+from collections import deque
 from importlib.util import find_spec
 from pathlib import Path
 from types import ModuleType
@@ -62,7 +63,7 @@ def path_to_module(module_path: Path, base_path: Path, package=None) -> str:
 
 
 def extract_imports_ast(tree, package: str, resolve=True) -> Iterable[str]:
-    for node in ast.walk(tree):
+    for node in walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
                 yield alias.name
@@ -73,6 +74,25 @@ def extract_imports_ast(tree, package: str, resolve=True) -> Iterable[str]:
                     yield resolve_module_or_object_by_path(fqname)
                 else:
                     yield fqname
+
+
+# from ast:
+def walk(node):
+    todo = deque([node])
+    while todo:
+        node = todo.popleft()
+        # Skip TYPE_CHECKING markers. The check if pretty rudimentary:
+        # it checks for if statements with either TYPE_CHECKING or <somemod>.TYPECHECKING in the expression.
+        # TODO: should we make this configurable?
+        if not (
+            isinstance(node, ast.If)
+            and (
+                (isinstance(node.test, ast.Name) and node.test.id == "TYPE_CHECKING")
+                or (isinstance(node.test, ast.Attribute) and node.test.attr == "TYPE_CHECKING")
+            )
+        ):
+            todo.extend(ast.iter_child_nodes(node))
+            yield node
 
 
 def update_with_transitive_imports(data):
