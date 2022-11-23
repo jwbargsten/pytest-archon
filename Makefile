@@ -10,6 +10,9 @@ help: ## list targets with short description
 test: $(VENV)/init ## run pytest
 	. $(VENV)/bin/activate && pytest -rA -vvs --log-level INFO
 
+cov: $(VENV)/init ## run pytest
+	. $(VENV)/bin/activate && coverage run --source=pytest_arch --module pytest && coverage report
+
 lint: $(VENV)/init ## run flake8 to check the code
 	. $(VENV)/bin/activate && flake8 pytest_arch tests
 
