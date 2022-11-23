@@ -1,4 +1,4 @@
-from pytest_arch.plugin import archrule
+from pytest_arch import archrule
 
 
 def test_rule_basic():
