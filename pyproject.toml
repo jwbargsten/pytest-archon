@@ -3,8 +3,8 @@ requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "py3arch"
-description = "Rule your architecture like a py3arch"
+name = "pytest-arch"
+description = "Rule your architecture like a real developer"
 authors = [
     { author = "Arjan Molenaar", email = "gaphor@gmail.com" },
     { author = "Joachim Bargsten", email = "jw@bargsten.org" }
@@ -22,12 +22,12 @@ classifiers = [
 ]
 dependencies = [
     "pytest-check",
+    "pytest>=7.2",
 ]
 dynamic = ["version"]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.2",
     "flake8",
     "black"
 ]
@@ -45,4 +45,4 @@ addopts = [
 ]
 
 [project.entry-points.pytest11]
-py3arch = "py3arch.pytest.plugin"
+arch = "pytest_arch.plugin"

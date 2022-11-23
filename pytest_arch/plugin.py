@@ -1,8 +1,9 @@
+import pytest
 from pytest_check import check
 import sys
 from fnmatch import fnmatch
 
-from py3arch.collect import collect_imports
+from pytest_arch.collect import collect_imports
 
 
 # https://peps.python.org/pep-0451/
@@ -19,7 +20,7 @@ class Rule:
         return RuleTargets(self).exclude(regex)
 
 
-def rule(name, comment=None):
+def archrule(name, comment=None):
     return Rule(name, comment=comment)
 
 
@@ -94,3 +95,9 @@ class RuleConstraints:
                 check.is_false(
                     matches, f"rule {rule_name}: module {c} has forbidden imports {matches} (/{constraint}/)"
                 )
+
+
+@pytest.fixture(name="archrule")
+def check_fixture():
+    # return check_functions
+    return archrule

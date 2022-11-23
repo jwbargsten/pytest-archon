@@ -1,7 +1,7 @@
 import ast
 from textwrap import dedent
 
-from py3arch.collect import extract_imports_ast
+from pytest_arch.collect import extract_imports_ast
 
 
 def test_parse():

@@ -1,6 +1,6 @@
 import pytest
 
-from py3arch.rule import ALLOWED, DENIED, UNDECIDED, lhs_matches, rhs_matches, rule
+from pytest_arch.rule import ALLOWED, DENIED, UNDECIDED, lhs_matches, rhs_matches, rule
 
 
 def test_allow_rules():

@@ -1,10 +1,8 @@
-# Py3arch
+# pytest-arch
 
-_(pronounce: py-triarch)_
+[![build_and_test](https://github.com/jwbargsten/pytest-arch/actions/workflows/tests.yml/badge.svg)](https://github.com/jwbargsten/pytest-arch/actions/workflows/tests.yml)
 
-[![build_and_test](https://github.com/jwbargsten/py3arch/actions/workflows/tests.yml/badge.svg)](https://github.com/jwbargsten/py3arch/actions/workflows/tests.yml)
-
-Py3arch is a little tool that helps you structure (large) Python projects.
+`pytest-arch` is a little tool that helps you structure (large) Python projects.
 This tool allows you to define architectural boundries in your code, also
 known as _forbidden dependencies_.
 
@@ -18,35 +16,35 @@ are made aware of the structure through a simple set of rules, instead of lore.
 The simple way:
 
 ```sh
-pip install git+https://github.com/jwbargsten/py3arch.git
+pip install git+https://github.com/jwbargsten/pytest-arch.git
 ```
 
 ## Usage
 
-Py3arch can be used to define architectural boundaries from (unit) tests. Because they're unit tests,
+`pytest-arch` can be used to define architectural boundaries from (unit) tests. Because they're unit tests,
 they can be closely tied to the actual application. 
 
-You can use py3arch in tests by simply importing the `rule` function. Using this
+You can use `pytest-arch` in tests by simply importing the `rule` function. Using this
 function you can construct import tests:
 
 ```
-from py3arch.pytest.plugin import rule
+from pytest_arch.plugin import archrule
 
 
 def test_rule_basic():
     (
-        rule("name", comment="some comment")
-        .match("py3arch.col*")
-        .except("py3arch.colgate")
-        .should_not_import("py3arch.import_finder")
-        .should_import("py3arch.core*")
-        .check("module", path=["/path/to/base/dir"])
+        archrule("name", comment="some comment")
+        .match("pytest_arch.col*")
+        .exclude("pytest_arch.colgate")
+        .should_not_import("pytest_arch.import_finder")
+        .should_import("pytest_arch.core*")
+        .check("pytest_arch", path=["/path/to/base/dir"])
     )
 ```
 
 - To match the modules and constraints,
   [fnmatch](https://docs.python.org/3/library/fnmatch.html) syntax is used.
-- `.except()` is optional
+- `.exclude()` is optional
 - `.should_import()` and `.should_not_import()` can be combined and can occur multiple
   times.
 - `.check()` needs either a module object or a string; `path` can be skipped and will be

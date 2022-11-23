@@ -13,7 +13,7 @@ def list_core_modules(version=None) -> List[str]:
     else:
         modules_file = Path(
             pkg_resources.resource_filename(
-                "py3arch", str(Path("assets", "core-module-lists", f"{version[0]}.{version[1]}.txt"))
+                "pytest_arch", str(Path("assets", "core-module-lists", f"{version[0]}.{version[1]}.txt"))
             )
         )
         if not modules_file.exists():

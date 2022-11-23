@@ -1,7 +1,7 @@
 import pytest
 import sys
 
-import py3arch.core_modules as cm
+import pytest_arch.core_modules as cm
 
 
 def test_read_legacy():
