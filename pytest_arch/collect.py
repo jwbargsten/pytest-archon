@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import ast
 import os
 import re
@@ -6,7 +8,7 @@ from collections import deque
 from importlib.util import find_spec
 from pathlib import Path
 from types import ModuleType
-from typing import Iterable
+from typing import Callable, Iterator, TypedDict
 
 from pytest_arch.core_modules import list_core_modules
 
@@ -16,13 +18,21 @@ from pytest_arch.core_modules import list_core_modules
 # https://github.com/0cjs/sedoc/blob/master/lang/python/importers.md
 
 
-def collect_imports(package, walker):
+Walker = Callable[[ast.Module], Iterator[ast.AST]]
+Imports = TypedDict("Imports", {"direct": set[str], "transitive": set[str], "is_circular": bool}, total=False)
+ImportMap = dict[
+    str,
+    Imports,
+]
+
+
+def collect_imports(package: str | ModuleType, walker: Walker) -> ImportMap:
     if isinstance(package, ModuleType):
         if not hasattr(package, "__path__"):
             raise AttributeError("module {name} does not have __path__".format(name=package.__name__))
         package = package.__name__
 
-    all_imports = {}
+    all_imports: ImportMap = {}
     for name, imports in collect_imports_from_path(package_dir(package), package, walker):
         direct_imports = {imp for imp in imports if imp != name}
         if name in all_imports:
@@ -33,7 +43,7 @@ def collect_imports(package, walker):
 
 
 # from ast:
-def walk(node, type_checking=True) -> Iterable[ast.AST]:
+def walk(node: ast.AST, type_checking=True) -> Iterator[ast.AST]:
     todo = deque([node])
     while todo:
         node = todo.popleft()
@@ -45,15 +55,18 @@ def walk(node, type_checking=True) -> Iterable[ast.AST]:
             yield node
 
 
-def package_dir(package):
+def package_dir(package: str) -> Path:
     spec = find_spec(package)
     if not spec:
         raise ModuleNotFoundError(f"could not find the module {package!r}", name=package)
 
-    return os.path.dirname(spec.origin)
+    assert spec.origin
+    return Path(spec.origin).parent
 
 
-def collect_imports_from_path(path, package, walker=walk):
+def collect_imports_from_path(
+    path: Path, package: str, walker: Walker = walk
+) -> Iterator[tuple[str, set[str]]]:
     for py_file in Path(path).glob("**/*.py"):
         module_name = path_to_module(py_file, path, package)
         tree = ast.parse(py_file.read_bytes())
@@ -77,7 +90,7 @@ def path_to_module(module_path: Path, base_path: Path, package=None) -> str:
     return re.sub(r"\.+", ".", module)
 
 
-def extract_imports_ast(nodes: Iterable[ast.AST], package: str, resolve=True) -> Iterable[str]:
+def extract_imports_ast(nodes: Iterator[ast.AST], package: str, resolve=True) -> Iterator[str]:
     for node in nodes:
         if isinstance(node, ast.Import):
             for alias in node.names:
@@ -91,14 +104,14 @@ def extract_imports_ast(nodes: Iterable[ast.AST], package: str, resolve=True) ->
                     yield fqname
 
 
-def type_checking_clause(node):
+def type_checking_clause(node: ast.AST) -> bool:
     return isinstance(node, ast.If) and (
         (isinstance(node.test, ast.Name) and node.test.id == "TYPE_CHECKING")
         or (isinstance(node.test, ast.Attribute) and node.test.attr == "TYPE_CHECKING")
     )
 
 
-def update_with_transitive_imports(data):
+def update_with_transitive_imports(data: ImportMap) -> None:
     for imports in data.values():
         transitive = []
         is_circular = False
@@ -127,14 +140,18 @@ def update_with_transitive_imports(data):
 
 
 # TODO replace with importlib.util.resolve_name ?
-def resolve_import_from(name, module=None, package=None, level=None):
+def resolve_import_from(
+    name: str, module: str | None = None, package: str | None = None, level: int = 0
+) -> str:
     if not level:
         # absolute import
         if name == "*":
+            assert module
             return module
         return name if module is None else f"{module}.{name}"
 
     # taken from importlib._bootstrap._resolve_name
+    assert package
     bits = package.rsplit(".", level)
     if len(bits) < level:
         raise ImportError("attempted relative import beyond top-level package")
@@ -156,7 +173,7 @@ def resolve_import_from(name, module=None, package=None, level=None):
 # importlib.util.find_spec is flaky and sometimes doesn't work
 # for now we use resolve_module_or_object_by_path till I figure
 # out what the issue is
-def resolve_module_or_object_by_spec(fqname):
+def resolve_module_or_object_by_spec(fqname: str) -> str:
     if fqname in list_core_modules():
         return fqname
 
@@ -178,7 +195,7 @@ def resolve_module_or_object_by_spec(fqname):
     return fqname if spec else fqname.rpartition(".")[0]
 
 
-def resolve_module_or_object_by_path(fqname, path=None):
+def resolve_module_or_object_by_path(fqname: str) -> str:
     if "." not in fqname:
         return fqname
 
@@ -222,6 +239,7 @@ def resolve_module_or_object_by_path(fqname, path=None):
     if has_no_submodules:
         raise ModuleNotFoundError(f"could not find the module {head} to resolve {fqname}", name=head)
 
+    assert spec.submodule_search_locations
     for base_path in spec.submodule_search_locations:
         init = os.path.join(base_path, *(parts[1:] + ["__init__.py"]))
         dir = os.path.join(base_path, *parts[1:])
