@@ -16,34 +16,49 @@ from pytest_arch.core_modules import list_core_modules
 # https://github.com/0cjs/sedoc/blob/master/lang/python/importers.md
 
 
-def collect_imports_from_path(path, package, type_checking=True):
-    for py_file in Path(path).glob("**/*.py"):
-        module_name = path_to_module(py_file, path, package)
-        tree = ast.parse(py_file.read_bytes())
-        import_it = extract_imports_ast(walk(tree, type_checking), module_name)
-        yield module_name, set(import_it)
-
-
-def collect_imports(package, type_checking=True):
+def collect_imports(package, walker):
     if isinstance(package, ModuleType):
         if not hasattr(package, "__path__"):
             raise AttributeError("module {name} does not have __path__".format(name=package.__name__))
         package = package.__name__
 
     all_imports = {}
-    spec = find_spec(package)
-    if not spec:
-        raise ModuleNotFoundError(f"could not find the module {package!r}", name=package)
-
-    pkg_dir = os.path.dirname(spec.origin)
-
-    for name, imports in collect_imports_from_path(pkg_dir, package, type_checking):
+    for name, imports in collect_imports_from_path(package_dir(package), package, walker):
         direct_imports = {imp for imp in imports if imp != name}
         if name in all_imports:
             raise KeyError("WTF? duplicate module {}".format(name))
         all_imports[name] = {"direct": direct_imports}
     update_with_transitive_imports(all_imports)
     return all_imports
+
+
+# from ast:
+def walk(node, type_checking=True) -> Iterable[ast.AST]:
+    todo = deque([node])
+    while todo:
+        node = todo.popleft()
+        # Skip TYPE_CHECKING markers. The check if pretty rudimentary:
+        # it checks for if statements with either TYPE_CHECKING or <somemod>.TYPECHECKING in the expression.
+        # TODO: should we make this configurable?
+        if type_checking or not type_checking_clause(node):
+            todo.extend(ast.iter_child_nodes(node))
+            yield node
+
+
+def package_dir(package):
+    spec = find_spec(package)
+    if not spec:
+        raise ModuleNotFoundError(f"could not find the module {package!r}", name=package)
+
+    return os.path.dirname(spec.origin)
+
+
+def collect_imports_from_path(path, package, walker=walk):
+    for py_file in Path(path).glob("**/*.py"):
+        module_name = path_to_module(py_file, path, package)
+        tree = ast.parse(py_file.read_bytes())
+        imports = extract_imports_ast(walker(tree), module_name)
+        yield module_name, set(imports)
 
 
 def path_to_module(module_path: Path, base_path: Path, package=None) -> str:
@@ -74,19 +89,6 @@ def extract_imports_ast(nodes: Iterable[ast.AST], package: str, resolve=True) ->
                     yield resolve_module_or_object_by_path(fqname)
                 else:
                     yield fqname
-
-
-# from ast:
-def walk(node, type_checking=True) -> Iterable[ast.AST]:
-    todo = deque([node])
-    while todo:
-        node = todo.popleft()
-        # Skip TYPE_CHECKING markers. The check if pretty rudimentary:
-        # it checks for if statements with either TYPE_CHECKING or <somemod>.TYPECHECKING in the expression.
-        # TODO: should we make this configurable?
-        if type_checking or not type_checking_clause(node):
-            todo.extend(ast.iter_child_nodes(node))
-            yield node
 
 
 def type_checking_clause(node):
