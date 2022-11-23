@@ -13,8 +13,6 @@ from pytest_arch.core_modules import list_core_modules
 # https://bugs.python.org/issue38721
 # https://github.com/0cjs/sedoc/blob/master/lang/python/importers.md
 
-CORE_MODULES = list_core_modules()
-
 
 def collect_imports_from_path(path, package):
     for py_file in Path(path).glob("**/*.py"):
@@ -105,13 +103,13 @@ def update_with_transitive_imports(data):
 
 
 def resolve_module_or_object(fqname):
-    if fqname in CORE_MODULES:
+    if fqname in list_core_modules():
         return fqname
 
     parent_name = fqname.rpartition(".")[0]
 
     # shortcut to deal with e.g. from __future__ import annotations
-    if parent_name in CORE_MODULES:
+    if parent_name in list_core_modules():
         return parent_name
 
     spec = None

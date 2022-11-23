@@ -1,10 +1,12 @@
 import sys
+from functools import lru_cache
 from pathlib import Path
 from typing import List
 
 import pkg_resources
 
 
+@lru_cache()
 def list_core_modules(version=None) -> List[str]:
     if version is None:
         version = sys.version_info
