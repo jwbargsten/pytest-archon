@@ -1,8 +1,8 @@
 import ast
-import importlib.util
 import os
 import re
 import sys
+from importlib.util import find_spec
 from pathlib import Path
 from types import ModuleType
 from typing import Iterable
@@ -30,7 +30,7 @@ def collect_imports(package):
         package = package.__name__
 
     all_imports = {}
-    spec = importlib.util.find_spec(package)
+    spec = find_spec(package)
     if not spec:
         raise ModuleNotFoundError(f"could not find the module {package!r}", name=package)
 
@@ -145,9 +145,9 @@ def resolve_module_or_object_by_spec(fqname):
 
     spec = None
     try:
-        spec = importlib.util.find_spec(fqname)
+        spec = find_spec(fqname)
     except ModuleNotFoundError as ex:
-        parent_spec = importlib.util.find_spec(parent_name)
+        parent_spec = find_spec(parent_name)
         # if we cannot find the parent, then something is off
         if not parent_spec:
             raise ex
@@ -184,7 +184,7 @@ def resolve_module_or_object_by_path(fqname, path=None):
                 raise ValueError("{}.__spec__ is None".format(fqname))
             return fqname
 
-    spec = importlib.util.find_spec(head)
+    spec = find_spec(head)
     if not spec:
         raise ModuleNotFoundError(f"could not find the module {head} to resolve {fqname}", name=head)
 
