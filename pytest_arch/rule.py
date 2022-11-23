@@ -79,6 +79,7 @@ class RuleConstraints:
         self.targets = targets
         self.forbidden = []
         self.required = []
+        self.ignored = []
 
     def should_not_import(self, pattern):
         """Define a constraint that the defined modules should
@@ -102,6 +103,14 @@ class RuleConstraints:
         self.required.append(pattern)
         return self
 
+    def may_import(self, pattern):
+        """Loosen the constraints from should_import and
+        should_not_import: modules matching may_import are
+        excluded/ignored from the constraint check.
+        """
+        self.ignored.append(pattern)
+        return self
+
     def check(self, package: str | ModuleType):
         """Check the rule against a package or module."""
         rule_name = self.rule.name
@@ -119,10 +128,22 @@ class RuleConstraints:
             candidates,
             f"No candidates matched. match criteria: {match_criteria}, exclude_criteria: {exclude_criteria}",
         )
-        print(f"rule {rule_name}: candidates are {candidates}")
+
+        candidates = sorted(candidates)
+
+        if len(candidates) > 4:
+            candidates_to_show = candidates[:2] + ["..."] + candidates[-1:]
+        else:
+            candidates_to_show = candidates
+
+        print(f"rule {rule_name}: candidates are {candidates_to_show}")
 
         for c in candidates:
             imports = all_imports[c].get("direct", []) | all_imports[c].get("transitive", [])
+
+            for constraint in self.ignored:
+                imports = [imp for imp in imports if not fnmatch(imp, constraint)]
+
             for constraint in self.required:
                 matches = [imp for imp in imports if fnmatch(imp, constraint)]
                 check.is_true(
