@@ -1,12 +1,11 @@
 from pathlib import Path
 
-import pytest
-
 from pytest_arch.collect import (
     collect_imports,
     collect_imports_from_path,
     path_to_module,
-    resolve_module_or_object,
+    resolve_module_or_object_by_path,
+    resolve_module_or_object_by_spec,
 )
 
 
@@ -96,7 +95,6 @@ def test_collect_pkg(create_testset, monkeypatch):
     assert "abcz.moduleC" in data["abcz.moduleA"]["transitive"]
 
 
-@pytest.mark.xfail
 def test_namespace_pkgs(create_testset, monkeypatch):
     path = create_testset(
         ("package/__init__.py", ""),
@@ -104,10 +102,15 @@ def test_namespace_pkgs(create_testset, monkeypatch):
     )
 
     monkeypatch.syspath_prepend(str(path))
-    res = resolve_module_or_object("package.initless.module.A")
+    res = resolve_module_or_object_by_path("package.initless.module.A")
     assert res == "package.initless.module"
 
 
-def test_resolve_module_or_object():
-    res = resolve_module_or_object("fnmatch.fnmatch")
+def test_resolve_module_or_object_by_spec():
+    res = resolve_module_or_object_by_spec("fnmatch.fnmatch")
+    assert res == "fnmatch"
+
+
+def test_resolve_module_or_object_by_path():
+    res = resolve_module_or_object_by_path("fnmatch.fnmatch")
     assert res == "fnmatch"
