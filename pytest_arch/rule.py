@@ -8,36 +8,20 @@ from pytest_check import check
 from pytest_arch.collect import collect_imports
 
 
-def archrule(name: str, comment: str | None = None) -> Rule:
+def archrule(name: str, comment: str | None = None) -> RuleTargets:
     """Define a new architectural rule with a name and an optional comment."""
-    return Rule(name, comment=comment)
+    return RuleTargets(name, comment=comment)
 
 
 # https://peps.python.org/pep-0451/
 # the path is the package path: where the submodules are in
-class Rule:
+class RuleTargets:
     def __init__(self, name: str, comment: str | None):
         """Define a new architectural rule with a name and a comment."""
         self.name = name
         self.comment = comment
-
-    def match(self, pattern: str) -> RuleTargets:
-        """A glob pattern for modules this rule should match."""
-        return RuleTargets(self).match(pattern)
-
-    def exclude(self, pattern: str) -> RuleTargets:
-        """A glob pattern for modules this rule should exclude from matching.
-
-        Exclusion takes precedence of matching.
-        """
-        return RuleTargets(self).exclude(pattern)
-
-
-class RuleTargets:
-    def __init__(self, rule):
-        self.rule = rule
-        self.match_criteria = []
-        self.exclude_criteria = []
+        self.match_criteria: list[str] = []
+        self.exclude_criteria: list[str] = []
 
     def match(self, pattern: str) -> RuleTargets:
         """A glob pattern for modules this rule should match."""
@@ -52,37 +36,12 @@ class RuleTargets:
         self.exclude_criteria.append(pattern)
         return self
 
-    def should_not_import(self, pattern: str) -> RuleConstraints:
-        """Define a constraint that the defined modules should
-        not import modules that match the given pattern.
-
-        Keep in mind that module dependencies are checked transtively.
-
-        E.g. 'mymodule.submodule', 'mymodule.*'
-        """
-        return RuleConstraints(self.rule, self).should_not_import(pattern)
-
-    def should_import(self, pattern) -> RuleConstraints:
-        """Define a constraint that the defined modules should
-        import modules that match the given pattern.
-
-        Keep in mind that module dependencies are checked transtively.
-
-        E.g. 'mymodule.submodule', 'mymodule.*'
-        """
-        return RuleConstraints(self.rule, self).should_import(pattern)
-
-    def may_import(self, pattern):
-        """Loosen the constraints from should_import and
-        should_not_import: modules matching may_import are
-        excluded/ignored from the constraint check.
-        """
-        return RuleConstraints(self.rule, self).may_import(pattern)
+    def constrain(self):
+        return RuleConstraints(self)
 
 
 class RuleConstraints:
-    def __init__(self, rule, targets):
-        self.rule = rule
+    def __init__(self, targets):
         self.targets = targets
         self.forbidden = []
         self.required = []
@@ -120,7 +79,7 @@ class RuleConstraints:
 
     def check(self, package: str | ModuleType):
         """Check the rule against a package or module."""
-        rule_name = self.rule.name
+        rule_name = self.targets.name
         all_imports = collect_imports(package)
         match_criteria = self.targets.match_criteria
         exclude_criteria = self.targets.exclude_criteria

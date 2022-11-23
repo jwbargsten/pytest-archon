@@ -2,6 +2,7 @@ def test_rule_basic(archrule):
     (
         archrule("abc", "def")
         .match("*collect")
+        .constrain()
         .should_not_import("pytest_arch.import_finder")
         .check("pytest_arch")
     )
@@ -16,6 +17,7 @@ def test_rule_fail(pytester):
             (
                 archrule("abc", "def")
                 .match("*collect")
+                .constrain()
                 .should_not_import("importl*")
                 .check(pytest_arch)
             )
