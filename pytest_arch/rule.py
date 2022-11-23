@@ -125,6 +125,7 @@ class RuleConstraints:
         self.ignored.append(pattern)
         return self
 
+    # def check(self, package: str | ModuleType, *, lazy_imports=True):
     def check(self, package: str | ModuleType, *, type_checking=True) -> None:
         """Check the rule against a package or module."""
         rule_name = self.rule.name

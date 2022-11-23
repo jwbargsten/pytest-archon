@@ -70,6 +70,11 @@ def walk(node: ast.AST, type_checking=True) -> Iterator[ast.AST]:
             yield node
 
 
+def walk_toplevel(node: ast.AST) -> Iterator[ast.AST]:
+    assert isinstance(node, ast.Module)
+    yield from node.body
+
+    
 def package_dir(package: str) -> Path:
     spec = find_spec(package)
     if not spec:
