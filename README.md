@@ -28,12 +28,12 @@ You can use `pytest-arch` in tests by simply importing the `rule` function. Usin
 function you can construct import tests:
 
 ```
-from pytest_arch.plugin import rule
+from pytest_arch.plugin import archrule
 
 
 def test_rule_basic():
     (
-        rule("name", comment="some comment")
+        archrule("name", comment="some comment")
         .match("pytest_arch.col*")
         .exclude("pytest_arch.colgate")
         .should_not_import("pytest_arch.import_finder")

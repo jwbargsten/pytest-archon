@@ -20,7 +20,7 @@ class Rule:
         return RuleTargets(self).exclude(regex)
 
 
-def rule(name, comment=None):
+def archrule(name, comment=None):
     return Rule(name, comment=comment)
 
 
@@ -96,7 +96,8 @@ class RuleConstraints:
                     matches, f"rule {rule_name}: module {c} has forbidden imports {matches} (/{constraint}/)"
                 )
 
-@pytest.fixture(name="arch_rule")
+
+@pytest.fixture(name="archrule")
 def check_fixture():
     # return check_functions
-    return rule
+    return archrule

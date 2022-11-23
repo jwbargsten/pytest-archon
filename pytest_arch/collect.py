@@ -81,7 +81,7 @@ def extract_imports_ast(tree, package: str, resolve=True) -> Iterable[str]:
 
 
 def update_with_transitive_imports(data):
-    for name, imports in data.items():
+    for imports in data.values():
         transitive = []
         is_circular = False
         seen = {}
