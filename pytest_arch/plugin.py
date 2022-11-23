@@ -1,3 +1,4 @@
+import pytest
 from pytest_check import check
 import sys
 from fnmatch import fnmatch
@@ -94,3 +95,8 @@ class RuleConstraints:
                 check.is_false(
                     matches, f"rule {rule_name}: module {c} has forbidden imports {matches} (/{constraint}/)"
                 )
+
+@pytest.fixture(name="arch_rule")
+def check_fixture():
+    # return check_functions
+    return rule

@@ -22,12 +22,12 @@ classifiers = [
 ]
 dependencies = [
     "pytest-check",
+    "pytest>=7.2",
 ]
 dynamic = ["version"]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.2",
     "flake8",
     "black"
 ]
