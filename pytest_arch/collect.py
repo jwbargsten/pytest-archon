@@ -16,15 +16,15 @@ from pytest_arch.core_modules import list_core_modules
 # https://github.com/0cjs/sedoc/blob/master/lang/python/importers.md
 
 
-def collect_imports_from_path(path, package):
+def collect_imports_from_path(path, package, type_checking=True):
     for py_file in Path(path).glob("**/*.py"):
         module_name = path_to_module(py_file, path, package)
         tree = ast.parse(py_file.read_bytes())
-        import_it = extract_imports_ast(walk(tree), module_name)
+        import_it = extract_imports_ast(walk(tree, type_checking), module_name)
         yield module_name, set(import_it)
 
 
-def collect_imports(package):
+def collect_imports(package, type_checking=True):
     if isinstance(package, ModuleType):
         if not hasattr(package, "__path__"):
             raise AttributeError("module {name} does not have __path__".format(name=package.__name__))
@@ -37,7 +37,7 @@ def collect_imports(package):
 
     pkg_dir = os.path.dirname(spec.origin)
 
-    for name, imports in collect_imports_from_path(pkg_dir, package):
+    for name, imports in collect_imports_from_path(pkg_dir, package, type_checking):
         direct_imports = {imp for imp in imports if imp != name}
         if name in all_imports:
             raise KeyError("WTF? duplicate module {}".format(name))
@@ -77,22 +77,23 @@ def extract_imports_ast(nodes: Iterable[ast.AST], package: str, resolve=True) ->
 
 
 # from ast:
-def walk(node) -> Iterable[ast.AST]:
+def walk(node, type_checking=True) -> Iterable[ast.AST]:
     todo = deque([node])
     while todo:
         node = todo.popleft()
         # Skip TYPE_CHECKING markers. The check if pretty rudimentary:
         # it checks for if statements with either TYPE_CHECKING or <somemod>.TYPECHECKING in the expression.
         # TODO: should we make this configurable?
-        if not (
-            isinstance(node, ast.If)
-            and (
-                (isinstance(node.test, ast.Name) and node.test.id == "TYPE_CHECKING")
-                or (isinstance(node.test, ast.Attribute) and node.test.attr == "TYPE_CHECKING")
-            )
-        ):
+        if type_checking or not type_checking_clause(node):
             todo.extend(ast.iter_child_nodes(node))
             yield node
+
+
+def type_checking_clause(node):
+    return isinstance(node, ast.If) and (
+        (isinstance(node.test, ast.Name) and node.test.id == "TYPE_CHECKING")
+        or (isinstance(node.test, ast.Attribute) and node.test.attr == "TYPE_CHECKING")
+    )
 
 
 def update_with_transitive_imports(data):

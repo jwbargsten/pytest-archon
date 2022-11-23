@@ -32,7 +32,7 @@ def test_skip_type_checking_marker():
     )
 
     root = ast.parse(code, "test_parse.py")
-    imports = list(extract_imports_ast(walk(root), ""))
+    imports = list(extract_imports_ast(walk(root, type_checking=False), ""))
 
     # Should this be os.path?
     assert "datetime" not in imports
@@ -50,7 +50,7 @@ def test_skip_typing_dot_type_checking_marker():
     )
 
     root = ast.parse(code, "test_parse.py")
-    imports = list(extract_imports_ast(walk(root), ""))
+    imports = list(extract_imports_ast(walk(root, type_checking=False), ""))
 
     # Should this be os.path?
     assert "datetime" not in imports
