@@ -1,7 +1,7 @@
 import ast
 from textwrap import dedent
 
-from pytest_arch.collect import extract_imports_ast
+from pytest_arch.collect import extract_imports_ast, walk
 
 
 def test_parse_imports():
@@ -14,7 +14,7 @@ def test_parse_imports():
     )
 
     root = ast.parse(code, "test_parse.py")
-    imports = list(extract_imports_ast(root, ""))
+    imports = list(extract_imports_ast(walk(root), ""))
 
     # Should this be os.path?
     assert "datetime" in imports
@@ -32,7 +32,7 @@ def test_skip_type_checking_marker():
     )
 
     root = ast.parse(code, "test_parse.py")
-    imports = list(extract_imports_ast(root, ""))
+    imports = list(extract_imports_ast(walk(root), ""))
 
     # Should this be os.path?
     assert "datetime" not in imports
@@ -50,7 +50,7 @@ def test_skip_typing_dot_type_checking_marker():
     )
 
     root = ast.parse(code, "test_parse.py")
-    imports = list(extract_imports_ast(root, ""))
+    imports = list(extract_imports_ast(walk(root), ""))
 
     # Should this be os.path?
     assert "datetime" not in imports
@@ -90,7 +90,7 @@ def test_parse_relative_imports(create_testset, monkeypatch):
 
     monkeypatch.syspath_prepend(path)
     root = ast.parse(code)
-    imports = set(extract_imports_ast(root, "pkgA.subpkg1.subpkg1a"))
+    imports = set(extract_imports_ast(walk(root), "pkgA.subpkg1.subpkg1a"))
 
     assert imports == {
         "datetime",

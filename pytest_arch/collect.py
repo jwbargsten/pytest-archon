@@ -20,7 +20,7 @@ def collect_imports_from_path(path, package):
     for py_file in Path(path).glob("**/*.py"):
         module_name = path_to_module(py_file, path, package)
         tree = ast.parse(py_file.read_bytes())
-        import_it = extract_imports_ast(tree, module_name)
+        import_it = extract_imports_ast(walk(tree), module_name)
         yield module_name, set(import_it)
 
 
@@ -62,8 +62,8 @@ def path_to_module(module_path: Path, base_path: Path, package=None) -> str:
     return re.sub(r"\.+", ".", module)
 
 
-def extract_imports_ast(tree, package: str, resolve=True) -> Iterable[str]:
-    for node in walk(tree):
+def extract_imports_ast(nodes: Iterable[ast.AST], package: str, resolve=True) -> Iterable[str]:
+    for node in nodes:
         if isinstance(node, ast.Import):
             for alias in node.names:
                 yield alias.name
@@ -77,7 +77,7 @@ def extract_imports_ast(tree, package: str, resolve=True) -> Iterable[str]:
 
 
 # from ast:
-def walk(node):
+def walk(node) -> Iterable[ast.AST]:
     todo = deque([node])
     while todo:
         node = todo.popleft()
