@@ -9,7 +9,7 @@ import importlib.util
 from pathlib import Path
 from typing import Iterable
 
-from py3arch.core_modules import list_core_modules
+from pytest_arch.core_modules import list_core_modules
 from importlib.util import find_spec
 
 # https://docs.djangoproject.com/en/4.1/_modules/django/utils/module_loading/

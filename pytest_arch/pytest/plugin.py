@@ -2,7 +2,7 @@ from pytest_check import check
 import sys
 from fnmatch import fnmatch
 
-from py3arch.collect import collect_imports
+from pytest_arch.collect import collect_imports
 
 
 # https://peps.python.org/pep-0451/

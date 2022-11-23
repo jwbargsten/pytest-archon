@@ -18,7 +18,7 @@ are made aware of the structure through a simple set of rules, instead of lore.
 The simple way:
 
 ```sh
-pip install git+https://github.com/jwbargsten/py3arch.git
+pip install git+https://github.com/jwbargsten/pytest-arch.git
 ```
 
 ## Usage

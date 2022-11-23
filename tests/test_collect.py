@@ -1,5 +1,5 @@
 import pytest
-from py3arch.collect import (
+from pytest_arch.collect import (
     path_to_module,
     collect_imports_from_path,
     collect_imports,
