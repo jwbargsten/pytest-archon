@@ -72,6 +72,13 @@ class RuleTargets:
         """
         return RuleConstraints(self.rule, self).should_import(pattern)
 
+    def may_import(self, pattern):
+        """Loosen the constraints from should_import and
+        should_not_import: modules matching may_import are
+        excluded/ignored from the constraint check.
+        """
+        return RuleConstraints(self.rule, self).may_import(pattern)
+
 
 class RuleConstraints:
     def __init__(self, rule, targets):
