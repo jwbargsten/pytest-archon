@@ -6,6 +6,7 @@ from pytest_arch.collect import (
     path_to_module,
     resolve_module_or_object_by_path,
     resolve_module_or_object_by_spec,
+    walk,
 )
 
 
@@ -91,7 +92,7 @@ def test_collect_pkg(create_testset, monkeypatch):
         ("abcz/moduleC.py", ""),
     )
     monkeypatch.syspath_prepend(str(path))
-    data = collect_imports("abcz")
+    data = collect_imports("abcz", walker=walk)
     assert "abcz.moduleC" in data["abcz.moduleA"]["transitive"]
 
 

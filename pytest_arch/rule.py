@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from fnmatch import fnmatch
+from functools import partial
 from types import ModuleType
 
 from pytest_check import check
 
-from pytest_arch.collect import collect_imports
+from pytest_arch.collect import collect_imports, walk
 
 
 def archrule(name: str, comment: str | None = None) -> Rule:
@@ -118,10 +119,10 @@ class RuleConstraints:
         self.ignored.append(pattern)
         return self
 
-    def check(self, package: str | ModuleType):
+    def check(self, package: str | ModuleType, *, type_checking=True):
         """Check the rule against a package or module."""
         rule_name = self.rule.name
-        all_imports = collect_imports(package)
+        all_imports = collect_imports(package, partial(walk, type_checking=type_checking))
         match_criteria = self.targets.match_criteria
         exclude_criteria = self.targets.exclude_criteria
 
