@@ -6,12 +6,11 @@
 This tool allows you to define architectural boundries in your code, also
 known as _forbidden dependencies_.
 
-Explicitly defined architectural boundaries help you keep your code in shape.
+Explicitly defined architectural boundaries helps you keep your code in shape.
 It avoids the creation of circular dependencies. New people on the project
 are made aware of the structure through a simple set of rules, instead of lore.
 
 ## Installation
-
 
 The simple way:
 
@@ -21,14 +20,14 @@ pip install git+https://github.com/jwbargsten/pytest-arch.git
 
 ## Usage
 
-`pytest-arch` can be used to define architectural boundaries from (unit) tests. Because they're unit tests,
-they can be closely tied to the actual application. 
+`pytest-arch` can be used to define architectural boundaries from (unit) tests.
+Because they're unit tests, they can be closely tied to the actual application. 
 
-You can use `pytest-arch` in tests by simply importing the `rule` function. Using this
-function you can construct import tests:
+You can use `pytest-arch` in tests by simply importing the `archrule` function.
+Using this function you can construct import tests:
 
-```
-from pytest_arch.plugin import archrule
+```python
+from pytest_arch import archrule
 
 
 def test_rule_basic():
