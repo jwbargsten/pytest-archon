@@ -1,11 +1,13 @@
+from pathlib import Path
+
 import pytest
+
 from pytest_arch.collect import (
-    path_to_module,
-    collect_imports_from_path,
     collect_imports,
+    collect_imports_from_path,
+    path_to_module,
     resolve_module_or_object,
 )
-from pathlib import Path
 
 
 def test_collect_modules(create_testset):

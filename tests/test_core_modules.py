@@ -1,5 +1,6 @@
-import pytest
 import sys
+
+import pytest
 
 import pytest_arch.core_modules as cm
 

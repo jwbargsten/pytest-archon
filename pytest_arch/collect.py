@@ -1,16 +1,12 @@
-import os
 import ast
-import re
-
-from types import ModuleType
-import importlib
 import importlib.util
-
+import os
+import re
 from pathlib import Path
+from types import ModuleType
 from typing import Iterable
 
 from pytest_arch.core_modules import list_core_modules
-from importlib.util import find_spec
 
 # https://docs.djangoproject.com/en/4.1/_modules/django/utils/module_loading/
 # https://stackoverflow.com/questions/54325116/can-i-handle-imports-in-an-abstract-syntax-tree
@@ -35,7 +31,7 @@ def collect_imports(package):
         package = package.__name__
 
     all_imports = {}
-    spec = find_spec(package)
+    spec = importlib.util.find_spec(package)
     if not spec:
         raise ModuleNotFoundError(f"could not find the module {package!r}", name=package)
 

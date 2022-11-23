@@ -1,7 +1,8 @@
-import pytest
-from pytest_check import check
 import sys
 from fnmatch import fnmatch
+
+import pytest
+from pytest_check import check
 
 from pytest_arch.collect import collect_imports
 
