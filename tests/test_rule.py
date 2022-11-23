@@ -3,12 +3,7 @@ from pytest_arch import archrule
 
 
 def test_rule_basic():
-    (
-        archrule("basic rule")
-        .match("*.collect")
-        .should_not_import("pytest_arch.rule")
-        .check(pytest_arch, path=["."])
-    )
+    (archrule("basic rule").match("*.collect").should_not_import("pytest_arch.rule").check(pytest_arch))
 
 
 def test_rule_exclusion():

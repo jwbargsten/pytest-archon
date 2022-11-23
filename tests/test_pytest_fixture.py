@@ -3,7 +3,7 @@ def test_rule_basic(archrule):
         archrule("abc", "def")
         .match("*collect")
         .should_not_import("pytest_arch.import_finder")
-        .check("pytest_arch", path=["."])
+        .check("pytest_arch")
     )
 
 

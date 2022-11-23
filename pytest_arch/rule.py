@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import sys
 from fnmatch import fnmatch
 from types import ModuleType
 
@@ -103,14 +102,9 @@ class RuleConstraints:
         self.required.append(pattern)
         return self
 
-    def check(self, package: str | ModuleType, path: list[str] | str | None = None):
-        """Check the rule against a package or module.
-
-        Path is an optional"""
+    def check(self, package: str | ModuleType):
+        """Check the rule against a package or module."""
         rule_name = self.rule.name
-        if path is not None:
-            sys.path.append(path) if isinstance(path, str) else sys.path.extend(path)
-
         all_imports = collect_imports(package)
         match_criteria = self.targets.match_criteria
         exclude_criteria = self.targets.exclude_criteria
