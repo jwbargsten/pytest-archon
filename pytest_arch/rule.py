@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys
 from fnmatch import fnmatch
 
@@ -17,10 +19,10 @@ class Rule:
         self.name = name
         self.comment = comment
 
-    def match(self, regex):
+    def match(self, regex: str) -> RuleTargets:
         return RuleTargets(self).match(regex)
 
-    def exclude(self, regex):
+    def exclude(self, regex: str) -> RuleTargets:
         return RuleTargets(self).exclude(regex)
 
 
@@ -30,19 +32,19 @@ class RuleTargets:
         self.match_criteria = []
         self.exclude_criteria = []
 
-    def match(self, regex):
+    def match(self, regex: str) -> RuleTargets:
         self.match_criteria.append(regex)
         return self
 
-    def exclude(self, regex):
+    def exclude(self, regex: str) -> RuleTargets:
         # update self
         self.exclude_criteria.append(regex)
         return self
 
-    def should_not_import(self, regex):
+    def should_not_import(self, regex: str) -> RuleConstraints:
         return RuleConstraints(self.rule, self).should_not_import(regex)
 
-    def should_import(self, regex):
+    def should_import(self, regex) -> RuleConstraints:
         return RuleConstraints(self.rule, self).should_import(regex)
 
 

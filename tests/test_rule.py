@@ -1,12 +1,33 @@
+import pytest_arch
 from pytest_arch import archrule
 
 
 def test_rule_basic():
     (
-        archrule("abc", "def")
-        .match("*collect")
-        .should_not_import("pytest_arch.import_finder")
-        .check("pytest_arch", path=["."])
+        archrule("basic rule")
+        .match("*.collect")
+        .should_not_import("pytest_arch.rule")
+        .check(pytest_arch, path=["."])
+    )
+
+
+def test_rule_exclusion():
+    (
+        archrule("rule exclusion")
+        .exclude("pytest_arch")
+        .match("*")
+        .exclude("pytest_arch.plugin")
+        .should_not_import("pytest_arch.rule")
+        .check("pytest_arch")
+    )
+
+
+def test_rule_should_import():
+    (
+        archrule("rule exclusion")
+        .match("pytest_arch.plugin")
+        .should_import("pytest_arch.rule")
+        .check(pytest_arch)
     )
 
 
