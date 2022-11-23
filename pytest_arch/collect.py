@@ -14,8 +14,6 @@ from pytest_arch.core_modules import list_core_modules
 # https://bugs.python.org/issue38721
 # https://github.com/0cjs/sedoc/blob/master/lang/python/importers.md
 
-CORE_MODULES = list_core_modules()
-
 
 def collect_imports_from_path(path, package):
     for py_file in Path(path).glob("**/*.py"):
@@ -136,13 +134,13 @@ def resolve_import_from(name, module=None, package=None, level=None):
 # for now we use resolve_module_or_object_by_path till I figure
 # out what the issue is
 def resolve_module_or_object_by_spec(fqname):
-    if fqname in CORE_MODULES:
+    if fqname in list_core_modules():
         return fqname
 
     parent_name = fqname.rpartition(".")[0]
 
     # shortcut to deal with e.g. from __future__ import annotations
-    if parent_name in CORE_MODULES:
+    if parent_name in list_core_modules():
         return parent_name
 
     spec = None
@@ -161,7 +159,7 @@ def resolve_module_or_object_by_path(fqname, path=None):
     if "." not in fqname:
         return fqname
 
-    if fqname in CORE_MODULES:
+    if fqname in list_core_modules():
         return fqname
 
     parts = fqname.split(".")
@@ -169,7 +167,7 @@ def resolve_module_or_object_by_path(fqname, path=None):
     parent_name = ".".join(parts[:-1])
 
     # shortcut to deal with e.g. from __future__ import annotations
-    if parent_name in CORE_MODULES:
+    if parent_name in list_core_modules():
         return parent_name
 
     # taken from importlib.util.find_spec
