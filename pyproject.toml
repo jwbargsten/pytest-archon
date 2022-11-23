@@ -21,7 +21,6 @@ classifiers = [
     "Framework :: Pytest",
 ]
 dependencies = [
-    'tomli; python_version<"3.11"',
     "pytest-check",
 ]
 dynamic = ["version"]
@@ -32,9 +31,6 @@ dev = [
     "flake8",
     "black"
 ]
-
-[project.scripts]
-py3arch = "py3arch.__main__:main"
 
 [tool.black]
 line-length = 110
