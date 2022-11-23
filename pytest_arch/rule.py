@@ -2,28 +2,36 @@ from __future__ import annotations
 
 import sys
 from fnmatch import fnmatch
+from types import ModuleType
 
 from pytest_check import check
 
 from pytest_arch.collect import collect_imports
 
 
-def archrule(name, comment=None):
+def archrule(name: str, comment: str | None = None) -> Rule:
+    """Define a new architectural rule with a name and an optional comment."""
     return Rule(name, comment=comment)
 
 
 # https://peps.python.org/pep-0451/
 # the path is the package path: where the submodules are in
 class Rule:
-    def __init__(self, name, comment):
+    def __init__(self, name: str, comment: str | None):
+        """Define a new architectural rule with a name and a comment."""
         self.name = name
         self.comment = comment
 
-    def match(self, regex: str) -> RuleTargets:
-        return RuleTargets(self).match(regex)
+    def match(self, pattern: str) -> RuleTargets:
+        """A glob pattern for modules this rule should match."""
+        return RuleTargets(self).match(pattern)
 
-    def exclude(self, regex: str) -> RuleTargets:
-        return RuleTargets(self).exclude(regex)
+    def exclude(self, pattern: str) -> RuleTargets:
+        """A glob pattern for modules this rule should exclude from matching.
+
+        Exclusion takes precedence of matching.
+        """
+        return RuleTargets(self).exclude(pattern)
 
 
 class RuleTargets:
@@ -32,20 +40,38 @@ class RuleTargets:
         self.match_criteria = []
         self.exclude_criteria = []
 
-    def match(self, regex: str) -> RuleTargets:
-        self.match_criteria.append(regex)
+    def match(self, pattern: str) -> RuleTargets:
+        """A glob pattern for modules this rule should match."""
+        self.match_criteria.append(pattern)
         return self
 
-    def exclude(self, regex: str) -> RuleTargets:
-        # update self
-        self.exclude_criteria.append(regex)
+    def exclude(self, pattern: str) -> RuleTargets:
+        """A glob pattern for modules this rule should exclude from matching.
+
+        Exclusion takes precedence of matching.
+        """
+        self.exclude_criteria.append(pattern)
         return self
 
-    def should_not_import(self, regex: str) -> RuleConstraints:
-        return RuleConstraints(self.rule, self).should_not_import(regex)
+    def should_not_import(self, pattern: str) -> RuleConstraints:
+        """Define a constraint that the defined modules should
+        not import modules that match the given pattern.
 
-    def should_import(self, regex) -> RuleConstraints:
-        return RuleConstraints(self.rule, self).should_import(regex)
+        Keep in mind that module dependencies are checked transtively.
+
+        E.g. 'mymodule.submodule', 'mymodule.*'
+        """
+        return RuleConstraints(self.rule, self).should_not_import(pattern)
+
+    def should_import(self, pattern) -> RuleConstraints:
+        """Define a constraint that the defined modules should
+        import modules that match the given pattern.
+
+        Keep in mind that module dependencies are checked transtively.
+
+        E.g. 'mymodule.submodule', 'mymodule.*'
+        """
+        return RuleConstraints(self.rule, self).should_import(pattern)
 
 
 class RuleConstraints:
@@ -55,15 +81,32 @@ class RuleConstraints:
         self.forbidden = []
         self.required = []
 
-    def should_not_import(self, regex):
-        self.forbidden.append(regex)
+    def should_not_import(self, pattern):
+        """Define a constraint that the defined modules should
+        not import modules that match the given pattern.
+
+        Keep in mind that module dependencies are checked transtively.
+
+        E.g. 'mymodule.submodule', 'mymodule.*'
+        """
+        self.forbidden.append(pattern)
         return self
 
-    def should_import(self, regex):
-        self.required.append(regex)
+    def should_import(self, pattern):
+        """Define a constraint that the defined modules should
+        import modules that match the given pattern.
+
+        Keep in mind that module dependencies are checked transtively.
+
+        E.g. 'mymodule.submodule', 'mymodule.*'
+        """
+        self.required.append(pattern)
         return self
 
-    def check(self, package, path=None):
+    def check(self, package: str | ModuleType, path: list[str] | str | None = None):
+        """Check the rule against a package or module.
+
+        Path is an optional"""
         rule_name = self.rule.name
         if path is not None:
             sys.path.append(path) if isinstance(path, str) else sys.path.extend(path)
