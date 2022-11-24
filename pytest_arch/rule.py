@@ -125,9 +125,24 @@ class RuleConstraints:
         return self
 
     def check(
-        self, package: str | ModuleType, *, skip_type_checking=False, only_toplevel_imports=False
+        self,
+        package: str | ModuleType,
+        *,
+        skip_type_checking=False,
+        only_toplevel_imports=False,
+        only_direct_imports=False,
     ) -> None:
-        """Check the rule against a package or module."""
+        """Check the rule against a package or module.
+
+        Options:
+
+        skip_type_checking:
+           Do not check TYPE_CHECKING blocks, used by static code analysers
+        only_toplevel_imports:
+            Do not traverse functions and methods, looking for imports
+        only_direct_imports:
+            Only check imports done by the module, not indirect imports
+        """
         rule_name = self.rule.name
         walker = (
             walk_toplevel
@@ -162,7 +177,11 @@ class RuleConstraints:
         print(f"rule {rule_name}: candidates are {candidates_to_show}")
 
         for c in candidates:
-            imports = all_imports[c].get("direct", set()) | all_imports[c].get("transitive", set())
+            imports = (
+                all_imports[c].get("direct", set())
+                if only_direct_imports
+                else all_imports[c].get("direct", set()) | all_imports[c].get("transitive", set())
+            )
 
             for constraint in self.ignored:
                 imports = {imp for imp in imports if not fnmatch(imp, constraint)}

@@ -35,6 +35,15 @@ def test_toplevel_imports_only():
     )
 
 
+def test_only_direct():
+    (
+        archrule("rule exclusion")
+        .match("pytest_arch.plugin")
+        .should_not_import("pytest_arch.collect")
+        .check("pytest_arch", only_direct_imports=True)
+    )
+
+
 def test_rule_fail(pytester):
     pytester.makepyfile(
         """
