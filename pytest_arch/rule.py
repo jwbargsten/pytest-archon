@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import sys
 from fnmatch import fnmatch
-from functools import partial
 from types import ModuleType
 
 from pytest_check import check
 
-from pytest_arch.collect import collect_imports, walk
+from pytest_arch.collect import collect_imports, walk, walk_toplevel
 
 if sys.version_info < (3, 9):
     from typing import List
@@ -125,10 +124,20 @@ class RuleConstraints:
         self.ignored.append(pattern)
         return self
 
-    def check(self, package: str | ModuleType, *, type_checking=True) -> None:
+    def check(
+        self, package: str | ModuleType, *, skip_type_checking=False, only_toplevel_imports=False
+    ) -> None:
         """Check the rule against a package or module."""
         rule_name = self.rule.name
-        all_imports = collect_imports(package, partial(walk, type_checking=type_checking))
+        walker = (
+            walk_toplevel
+            if only_toplevel_imports
+            else lambda tree: walk(tree, skip_type_checking=skip_type_checking)
+        )
+        all_imports = collect_imports(
+            package,
+            walker,
+        )
         match_criteria = self.targets.match_criteria
         exclude_criteria = self.targets.exclude_criteria
 

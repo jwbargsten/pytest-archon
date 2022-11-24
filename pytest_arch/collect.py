@@ -58,16 +58,20 @@ def collect_imports(package: str | ModuleType, walker: Walker) -> ImportMap:
 
 
 # from ast:
-def walk(node: ast.AST, type_checking=True) -> Iterator[ast.AST]:
+def walk(node: ast.AST, skip_type_checking=False) -> Iterator[ast.AST]:
     todo = deque([node])
     while todo:
         node = todo.popleft()
         # Skip TYPE_CHECKING markers. The check if pretty rudimentary:
         # it checks for if statements with either TYPE_CHECKING or <somemod>.TYPECHECKING in the expression.
         # TODO: should we make this configurable?
-        if type_checking or not type_checking_clause(node):
+        if not (skip_type_checking and type_checking_clause(node)):
             todo.extend(ast.iter_child_nodes(node))
             yield node
+
+
+def walk_toplevel(node: ast.Module) -> Iterator[ast.AST]:
+    yield from node.body
 
 
 def package_dir(package: str) -> Path:

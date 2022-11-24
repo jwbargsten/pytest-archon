@@ -1,7 +1,7 @@
 import ast
 from textwrap import dedent
 
-from pytest_arch.collect import extract_imports_ast, walk
+from pytest_arch.collect import extract_imports_ast, walk, walk_toplevel
 
 
 def test_parse_imports():
@@ -16,9 +16,29 @@ def test_parse_imports():
     root = ast.parse(code, "test_parse.py")
     imports = list(extract_imports_ast(walk(root), ""))
 
-    # Should this be os.path?
-    assert "datetime" in imports
     assert "sys" in imports
+    assert "datetime" in imports
+
+
+def test_parse_toplevel_imports():
+    code = dedent(
+        """\
+        import sys
+        if 0:
+            from datetime import datetime
+        """
+    )
+
+    root = ast.parse(code, "test_parse.py")
+    imports = list(
+        extract_imports_ast(
+            walk_toplevel(root),
+            "",
+        )
+    )
+
+    assert "sys" in imports
+    assert "datetime" not in imports
 
 
 def test_skip_type_checking_marker():
@@ -32,7 +52,7 @@ def test_skip_type_checking_marker():
     )
 
     root = ast.parse(code, "test_parse.py")
-    imports = list(extract_imports_ast(walk(root, type_checking=False), ""))
+    imports = list(extract_imports_ast(walk(root, skip_type_checking=True), ""))
 
     # Should this be os.path?
     assert "datetime" not in imports
@@ -50,7 +70,7 @@ def test_skip_typing_dot_type_checking_marker():
     )
 
     root = ast.parse(code, "test_parse.py")
-    imports = list(extract_imports_ast(walk(root, type_checking=False), ""))
+    imports = list(extract_imports_ast(walk(root, skip_type_checking=True), ""))
 
     # Should this be os.path?
     assert "datetime" not in imports
