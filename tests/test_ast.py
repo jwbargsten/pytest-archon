@@ -30,7 +30,12 @@ def test_parse_toplevel_imports():
     )
 
     root = ast.parse(code, "test_parse.py")
-    imports = list(extract_imports_ast(walk_toplevel(root), "", ))
+    imports = list(
+        extract_imports_ast(
+            walk_toplevel(root),
+            "",
+        )
+    )
 
     assert "sys" in imports
     assert "datetime" not in imports
@@ -47,7 +52,7 @@ def test_skip_type_checking_marker():
     )
 
     root = ast.parse(code, "test_parse.py")
-    imports = list(extract_imports_ast(walk(root, type_checking=False), ""))
+    imports = list(extract_imports_ast(walk(root, skip_type_checking=True), ""))
 
     # Should this be os.path?
     assert "datetime" not in imports
@@ -65,7 +70,7 @@ def test_skip_typing_dot_type_checking_marker():
     )
 
     root = ast.parse(code, "test_parse.py")
-    imports = list(extract_imports_ast(walk(root, type_checking=False), ""))
+    imports = list(extract_imports_ast(walk(root, skip_type_checking=True), ""))
 
     # Should this be os.path?
     assert "datetime" not in imports
