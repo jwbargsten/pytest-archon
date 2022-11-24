@@ -12,6 +12,14 @@ from typing import Callable, Iterator, TypedDict
 
 from pytest_arch.core_modules import list_core_modules
 
+if sys.version_info < (3, 9):
+    from typing import Dict, Set, Tuple
+else:
+    Dict = dict
+    Set = set
+    Tuple = tuple
+
+
 # https://docs.djangoproject.com/en/4.1/_modules/django/utils/module_loading/
 # https://stackoverflow.com/questions/54325116/can-i-handle-imports-in-an-abstract-syntax-tree
 # https://bugs.python.org/issue38721
@@ -19,8 +27,15 @@ from pytest_arch.core_modules import list_core_modules
 
 
 Walker = Callable[[ast.Module], Iterator[ast.AST]]
-Imports = TypedDict("Imports", {"direct": set[str], "transitive": set[str], "is_circular": bool}, total=False)
-ImportMap = dict[
+
+
+class Imports(TypedDict, total=False):
+    direct: Set[str]
+    transitive: Set[str]
+    is_circular: bool
+
+
+ImportMap = Dict[
     str,
     Imports,
 ]
@@ -29,14 +44,14 @@ ImportMap = dict[
 def collect_imports(package: str | ModuleType, walker: Walker) -> ImportMap:
     if isinstance(package, ModuleType):
         if not hasattr(package, "__path__"):
-            raise AttributeError("module {name} does not have __path__".format(name=package.__name__))
+            raise AttributeError(f"module {package.__name__} does not have __path__")
         package = package.__name__
 
     all_imports: ImportMap = {}
     for name, imports in collect_imports_from_path(package_dir(package), package, walker):
         direct_imports = {imp for imp in imports if imp != name}
         if name in all_imports:
-            raise KeyError("WTF? duplicate module {}".format(name))
+            raise KeyError(f"WTF? duplicate module {name}")
         all_imports[name] = {"direct": direct_imports}
     update_with_transitive_imports(all_imports)
     return all_imports
@@ -66,7 +81,7 @@ def package_dir(package: str) -> Path:
 
 def collect_imports_from_path(
     path: Path, package: str, walker: Walker = walk
-) -> Iterator[tuple[str, set[str]]]:
+) -> Iterator[Tuple[str, Set[str]]]:  # type: ignore[type-arg]
     for py_file in Path(path).glob("**/*.py"):
         module_name = path_to_module(py_file, path, package)
         tree = ast.parse(py_file.read_bytes())
@@ -218,10 +233,10 @@ def resolve_module_or_object_by_path(fqname: str) -> str:
         try:
             spec = module.__spec__
         except AttributeError:
-            raise ValueError("{}.__spec__ is not set".format(fqname)) from None
+            raise ValueError(f"{fqname}.__spec__ is not set") from None
         else:
             if spec is None:
-                raise ValueError("{}.__spec__ is None".format(fqname))
+                raise ValueError(f"{fqname}.__spec__ is None")
             return fqname
 
     spec = find_spec(head)
