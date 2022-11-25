@@ -1,17 +1,17 @@
 import sys
 from functools import lru_cache
 from pathlib import Path
-from typing import List
+from typing import FrozenSet
 
 import pkg_resources
 
 
 @lru_cache()
-def list_core_modules(version=None) -> List[str]:
+def core_modules(version=None) -> FrozenSet[str]:
     if version is None:
         version = sys.version_info
     if version >= (3, 10):
-        modules = list(set(list(sys.stdlib_module_names) + list(sys.builtin_module_names)))
+        modules = sys.stdlib_module_names | set(sys.builtin_module_names)
     else:
         modules_file = Path(
             pkg_resources.resource_filename(
@@ -22,5 +22,5 @@ def list_core_modules(version=None) -> List[str]:
             raise FileNotFoundError(
                 f"{modules_file} does not exist, perhaps your python version is not supported"
             )
-        modules = modules_file.read_text().splitlines()
+        modules = frozenset(modules_file.read_text().splitlines())
     return modules

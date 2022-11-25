@@ -10,7 +10,7 @@ from pathlib import Path
 from types import ModuleType
 from typing import Callable, Iterator, TypedDict
 
-from pytest_arch.core_modules import list_core_modules
+from pytest_arch.core_modules import core_modules
 
 if sys.version_info < (3, 9):
     from typing import Dict, Set, Tuple
@@ -193,13 +193,13 @@ def resolve_import_from(
 # for now we use resolve_module_or_object_by_path till I figure
 # out what the issue is
 def resolve_module_or_object_by_spec(fqname: str) -> str:
-    if fqname in list_core_modules():
+    if fqname in core_modules():
         return fqname
 
     parent_name = fqname.rpartition(".")[0]
 
     # shortcut to deal with e.g. from __future__ import annotations
-    if parent_name in list_core_modules():
+    if parent_name in core_modules():
         return parent_name
 
     spec = None
@@ -218,7 +218,7 @@ def resolve_module_or_object_by_path(fqname: str) -> str:
     if "." not in fqname:
         return fqname
 
-    if fqname in list_core_modules():
+    if fqname in core_modules():
         return fqname
 
     parts = fqname.split(".")
@@ -226,7 +226,7 @@ def resolve_module_or_object_by_path(fqname: str) -> str:
     parent_name = ".".join(parts[:-1])
 
     # shortcut to deal with e.g. from __future__ import annotations
-    if parent_name in list_core_modules():
+    if parent_name in core_modules():
         return parent_name
 
     # taken from importlib.util.find_spec
