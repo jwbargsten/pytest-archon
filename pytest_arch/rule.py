@@ -8,6 +8,13 @@ from pytest_check import check  # type: ignore[import]
 from pytest_arch.collect import collect_imports, walk, walk_toplevel
 
 
+def _fmt_rule(name, comment, text):
+    res = f"RULE {name}: {text}"
+    if comment:
+        res += f"\n({comment})"
+    return res
+
+
 def archrule(name: str, comment: str | None = None) -> Rule:
     """Define a new architectural rule with a name and an optional comment."""
     return Rule(name, comment=comment)
@@ -159,7 +166,7 @@ class RuleConstraints:
 
         check.is_true(
             candidates,
-            f"No candidates matched. match criteria: {match_criteria}, exclude_criteria: {exclude_criteria}",
+            f"NO CANDIDATES MATCHED. Match criteria: {match_criteria}, exclude_criteria: {exclude_criteria}",
         )
 
         candidates = sorted(candidates)
@@ -185,13 +192,19 @@ class RuleConstraints:
                 matches = {imp for imp in imports if fnmatch(imp, constraint)}
                 check.is_true(
                     matches,
-                    f"rule {rule_name} ({rule_comment})\n"
-                    f"    module {c} did not import anything that matches /{constraint}/",
+                    _fmt_rule(
+                        rule_name,
+                        rule_comment,
+                        f"module '{c}' is missing REQUIRED imports matching pattern /{constraint}/",
+                    ),
                 )
             for constraint in self.forbidden:
                 matches = {imp for imp in imports if fnmatch(imp, constraint)}
                 check.is_false(
                     matches,
-                    f"rule {rule_name} ({rule_comment})\n"
-                    f"    module {c} has forbidden imports {matches} (/{constraint}/)",
+                    _fmt_rule(
+                        rule_name,
+                        rule_comment,
+                        f"module '{c}' has FORBIDDEN imports:\n{matches} (matched by /{constraint}/)",
+                    ),
                 )
