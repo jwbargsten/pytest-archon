@@ -9,21 +9,6 @@ from pytest_check import check  # type: ignore[import]
 from pytest_arch.collect import collect_imports, walk, walk_toplevel
 
 
-def _as_array(value):
-    if isinstance(value, str):
-        return [value]
-    # will throw exception when we have a non-iterable object
-    _ = iter(value)
-    return value
-
-
-def _fmt_rule(name, comment, text):
-    res = f"RULE {name}: {text}"
-    if comment:
-        res += f"\n({comment})"
-    return res
-
-
 def archrule(name: str, comment: str | None = None) -> Rule:
     """Define a new architectural rule with a name and an optional comment."""
     return Rule(name, comment=comment)
@@ -217,3 +202,18 @@ class RuleConstraints:
                         f"module '{c}' has FORBIDDEN imports:\n{matches} (matched by /{constraint}/)",
                     ),
                 )
+
+
+def _as_array(value):
+    if isinstance(value, str):
+        return [value]
+    # will throw exception when we have a non-iterable object
+    iter(value)
+    return value
+
+
+def _fmt_rule(name, comment, text):
+    res = f"RULE {name}: {text}"
+    if comment:
+        res += f"\n({comment})"
+    return res
