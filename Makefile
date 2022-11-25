@@ -28,6 +28,20 @@ fmt: $(VENV)/init ## run black to format the code
 fmt-check: $(VENV)/init ## run black to format the code
 	. $(VENV)/bin/activate && black --check pytest_arch tests
 
-$(VENV)/init: ## init the virtual environment
+
+build: $(VENV)/init ## build the pkg
+	$(PY) -m build
+
+publish-test: build
+	$(PY) -m twine upload --repository testpypi dist/*
+
+publish: build
+	$(PY) -m twine upload dist/*
+
+test-install:
+	$(PIP) install --index-url https://test.pypi.org/simple/ --no-deps pytest-arch-jwb
+
+$(VENV)/init: pyproject.toml Makefile ## init the virtual environment
 	python -m venv $(VENV)
+	$(PIP) install --upgrade build twine
 	touch $@

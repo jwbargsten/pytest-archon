@@ -27,6 +27,12 @@ dependencies = [
 ]
 dynamic = ["version"]
 
+[tool.setuptools.dynamic]
+version = {attr = "pytest_arch.__version__"}
+
+[project.urls]
+homepage = "https://github.com/jwbargsten/pytest-arch"
+
 [project.optional-dependencies]
 dev = [
     "coverage",
