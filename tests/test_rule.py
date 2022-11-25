@@ -17,6 +17,17 @@ def test_rule_exclusion():
     )
 
 
+def test_rule_exclusion_list():
+    (
+        archrule("rule exclusion")
+        .exclude(["pytest_arch"])
+        .match(["*"])
+        .exclude(["pytest_arch.plugin"])
+        .should_not_import(["pytest_arch.rule"])
+        .check("pytest_arch")
+    )
+
+
 def test_rule_should_import():
     (
         archrule("rule exclusion")
