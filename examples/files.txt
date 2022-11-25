@@ -1,0 +1,58 @@
+delorean_time_machine/domain/units.py
+delorean_time_machine/domain/model.py
+delorean_time_machine/domain/events.py
+delorean_time_machine/domain/energy_distribution.py
+delorean_time_machine/domain/flux_capacitor.py
+delorean_time_machine/domain/time_circuits.py
+delorean_time_machine/domain/__init__.py
+delorean_time_machine/service/time_display.py
+delorean_time_machine/service/mr_fusion.py
+delorean_time_machine/infra/engine.py
+
+
+everything needs to use delorean_time_machine.domain
+delorean_time_machine.domain cannot import other modules
+
+
+risk_calculation/common/util.py
+risk_calculation/dt_conversion.py
+risk_calculation/sanitisation.py
+risk_calculation/ingestion/sepa/__init__.py
+risk_calculation/ingestion/swift/__init__.py
+risk_calculation/ingestion/sparkasse_germany/__init__.py
+risk_calculation/preparation/string_sanitisation.py
+risk_calculation/preparation/__init__.py
+risk_calculation/pi_data_masking/__init__.py
+risk_calculation/risk_assignment/__init__.py
+risk_calculation/risk_assignment/model.py
+from pytest_arch.plugin import archrule
+
+
+def test_module_boundaries():
+    modules = [
+        "sepa_ingestion",
+        "swift_ingestion",
+        "sparkasse_germany_ingestion",
+    ]
+    for m in modules:
+        (
+            archrule(
+                "respect module boundaries",
+                comment="respect the module boundary and only import from the (sub-)module API",
+            )
+            .match("*")
+            .exclude(f"risk_calculation.{m}.*")
+            .should_not_import(f"risk_calculation.{m}.*")
+            .check("risk_calculation")
+        )
+
+
+def test_common():
+    (
+        archrule("common", comment="common does not import any other submodules")
+        .match("risk_calculation.common.*")
+        .match("risk_calculation.common")
+        .should_not_import("risk_calculation*")
+        .may_import("risk_calculation.common.*")
+        .check("risk_calculation")
+    )
