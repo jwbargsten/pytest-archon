@@ -122,6 +122,7 @@ class RuleConstraints:
     def check(self, package: str | ModuleType, *, type_checking=True):
         """Check the rule against a package or module."""
         rule_name = self.rule.name
+        rule_comment = self.rule.comment
         all_imports = collect_imports(package, partial(walk, type_checking=type_checking))
         match_criteria = self.targets.match_criteria
         exclude_criteria = self.targets.exclude_criteria
@@ -156,10 +157,13 @@ class RuleConstraints:
                 matches = [imp for imp in imports if fnmatch(imp, constraint)]
                 check.is_true(
                     matches,
-                    f"rule {rule_name}: module {c} did not import anything that matches /{constraint}/",
+                    f"rule {rule_name} ({rule_comment})\n"
+                    f"    module {c} did not import anything that matches /{constraint}/",
                 )
             for constraint in self.forbidden:
                 matches = [imp for imp in imports if fnmatch(imp, constraint)]
                 check.is_false(
-                    matches, f"rule {rule_name}: module {c} has forbidden imports {matches} (/{constraint}/)"
+                    matches,
+                    f"rule {rule_name} ({rule_comment})\n"
+                    f"    module {c} has forbidden imports {matches} (/{constraint}/)",
                 )
