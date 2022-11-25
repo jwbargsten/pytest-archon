@@ -64,6 +64,12 @@ def test_module_boundaries():
         "moduleB",
     ]
     for m in modules:
+        # Match all files,
+        # but exclude files from the module you want to check
+        # (because the module itself needs to import its internals).
+        # Make sure that nobody imports internal functions or objects
+        # from the module we are looking at.
+        # Run the rule check on packageX.
         (
             archrule(
                 "respect module boundaries",
