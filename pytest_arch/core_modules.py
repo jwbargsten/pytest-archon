@@ -1,26 +1,32 @@
+import importlib.resources
 import sys
 from functools import lru_cache
-from pathlib import Path
-from typing import List
-
-import pkg_resources
+from typing import FrozenSet
 
 
-@lru_cache()
-def list_core_modules(version=None) -> List[str]:
+@lru_cache
+def core_modules(version=None) -> FrozenSet[str]:
     if version is None:
         version = sys.version_info
     if version >= (3, 10):
-        modules = list(set(list(sys.stdlib_module_names) + list(sys.builtin_module_names)))
+        modules = sys.stdlib_module_names | set(sys.builtin_module_names)  # type: ignore[attr-defined]
     else:
-        modules_file = Path(
-            pkg_resources.resource_filename(
-                "pytest_arch", str(Path("assets", "core-module-lists", f"{version[0]}.{version[1]}.txt"))
-            )
-        )
+        modules_file = _module_file_path(version)
         if not modules_file.exists():
             raise FileNotFoundError(
                 f"{modules_file} does not exist, perhaps your python version is not supported"
             )
-        modules = modules_file.read_text().splitlines()
+        modules = frozenset(modules_file.read_text().splitlines())
     return modules
+
+
+def _module_file_path(version):
+    if sys.version_info < (3, 9):
+        with importlib.resources.path("pytest_arch", "assets") as p:
+            return p / "core-module-lists" / f"{version[0]}.{version[1]}.txt"
+    return (
+        importlib.resources.files("pytest_arch")
+        / "assets"
+        / "core-module-lists"
+        / f"{version[0]}.{version[1]}.txt"
+    )
