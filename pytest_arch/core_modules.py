@@ -4,7 +4,7 @@ from functools import lru_cache
 from typing import FrozenSet
 
 
-@lru_cache()
+@lru_cache
 def core_modules(version=None) -> FrozenSet[str]:
     if version is None:
         version = sys.version_info

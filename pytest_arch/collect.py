@@ -8,17 +8,9 @@ from collections import deque
 from importlib.util import find_spec
 from pathlib import Path
 from types import ModuleType
-from typing import Callable, Iterator, TypedDict
+from typing import Callable, Dict, Iterator, TypedDict
 
 from pytest_arch.core_modules import core_modules
-
-if sys.version_info < (3, 9):
-    from typing import Dict, Set, Tuple
-else:
-    Dict = dict
-    Set = set
-    Tuple = tuple
-
 
 # https://docs.djangoproject.com/en/4.1/_modules/django/utils/module_loading/
 # https://stackoverflow.com/questions/54325116/can-i-handle-imports-in-an-abstract-syntax-tree
@@ -30,8 +22,8 @@ Walker = Callable[[ast.Module], Iterator[ast.AST]]
 
 
 class Imports(TypedDict, total=False):
-    direct: Set[str]
-    transitive: Set[str]
+    direct: set[str]
+    transitive: set[str]
     is_circular: bool
 
 
@@ -85,7 +77,7 @@ def package_dir(package: str) -> Path:
 
 def collect_imports_from_path(
     path: Path, package: str, walker: Walker = walk
-) -> Iterator[Tuple[str, Set[str]]]:  # type: ignore[type-arg]
+) -> Iterator[tuple[str, set[str]]]:  # type: ignore[type-arg]
     for py_file in Path(path).glob("**/*.py"):
         module_name = path_to_module(py_file, path, package)
         tree = ast.parse(py_file.read_bytes())
