@@ -37,7 +37,7 @@ def test_rule_basic():
         .exclude("pytest_arch.colgate")
         .should_not_import("pytest_arch.import_finder")
         .should_import("pytest_arch.core*")
-        .check("pytest_arch", path=["/path/to/base/dir"])
+        .check("pytest_arch")
     )
 ```
 
@@ -46,10 +46,49 @@ def test_rule_basic():
 - `.exclude()` is optional
 - `.should_import()` and `.should_not_import()` can be combined and can occur multiple
   times.
-- `.check()` needs either a module object or a string; `path` can be skipped and will be
-  derived from the module path.
-- `comment=` is currently not used, but might be in the future
+- `.check()` needs either a module object or a string
 
+
+## Examples
+
+```python
+def test_module_boundaries():
+    # you can do:
+    # from packageX.moduleA import functionX
+    # you cannot do
+    # from packageX.moduleA.internal.functionY
+    # so packageX/moduleA/__init__.py contains the exposed API functions,
+    # and only they can be used
+    modules = [
+        "moduleA",
+        "moduleB",
+    ]
+    for m in modules:
+        (
+            archrule(
+                "respect module boundaries",
+                comment="respect the module boundary and only import from the (sub-)module API",
+            )
+            .match("*")
+            .exclude(f"packageX.{m}.*")
+            .exclude(f"packageX.{m}")
+            .should_not_import(f"packageX.{m}.*")
+            .check("packageX", only_direct_imports=True)
+        )
+
+
+def test_domain():
+    # test if the domain model does not import other submodules
+    # (the domain model should be standing on its own and be used by other modules)
+    (
+        archrule("domain", comment="domain does not import any other submodules")
+        .match("packageX.domain.*")
+        .match("packageX.domain")
+        .should_not_import("packageX*")
+        .may_import("packageX.domain.*")
+        .check("packageX")
+    )
+```
 
 
 ## Similar projects
