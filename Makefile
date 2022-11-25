@@ -30,6 +30,7 @@ fmt-check: $(VENV)/init ## run black to format the code
 
 
 build: $(VENV)/init ## build the pkg
+	rm -rf dist/ build/ *.egg-info
 	$(PY) -m build
 
 publish-test: build

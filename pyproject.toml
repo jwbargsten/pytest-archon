@@ -27,9 +27,6 @@ dependencies = [
 ]
 dynamic = ["version"]
 
-[tool.setuptools.dynamic]
-version = {attr = "pytest_arch.__version__"}
-
 [project.urls]
 homepage = "https://github.com/jwbargsten/pytest-arch"
 
@@ -41,8 +38,13 @@ dev = [
     "mypy"
 ]
 
-[tool.setuptools]
-packages = ["pytest_arch"]
+[tool.setuptools_scm]
+
+[tool.setuptools.packages.find]
+namespaces = true
+
+[tool.setuptools.package-data]
+"pytest_arch.assets" = ["*.txt"]
 
 [tool.black]
 line-length = 110
