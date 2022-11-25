@@ -8,13 +8,6 @@ from pytest_check import check  # type: ignore[import]
 from pytest_arch.collect import collect_imports, walk, walk_toplevel
 
 
-def _fmt_rule(name, comment, text):
-    res = f"RULE {name}: {text}"
-    if comment:
-        res += f"\n({comment})"
-    return res
-
-
 def archrule(name: str, comment: str | None = None) -> Rule:
     """Define a new architectural rule with a name and an optional comment."""
     return Rule(name, comment=comment)
@@ -28,16 +21,16 @@ class Rule:
         self.name = name
         self.comment = comment
 
-    def match(self, pattern: str) -> RuleTargets:
+    def match(self, *pattern: str) -> RuleTargets:
         """A glob pattern for modules this rule should match."""
-        return RuleTargets(self).match(pattern)
+        return RuleTargets(self).match(*pattern)
 
-    def exclude(self, pattern: str) -> RuleTargets:
+    def exclude(self, *pattern: str) -> RuleTargets:
         """A glob pattern for modules this rule should exclude from matching.
 
         Exclusion takes precedence of matching.
         """
-        return RuleTargets(self).exclude(pattern)
+        return RuleTargets(self).exclude(*pattern)
 
 
 class RuleTargets:
@@ -46,20 +39,20 @@ class RuleTargets:
         self.match_criteria: list[str] = []
         self.exclude_criteria: list[str] = []
 
-    def match(self, pattern: str) -> RuleTargets:
+    def match(self, *pattern: str) -> RuleTargets:
         """A glob pattern for modules this rule should match."""
-        self.match_criteria.append(pattern)
+        self.match_criteria.extend(pattern)
         return self
 
-    def exclude(self, pattern: str) -> RuleTargets:
+    def exclude(self, *pattern: str) -> RuleTargets:
         """A glob pattern for modules this rule should exclude from matching.
 
         Exclusion takes precedence of matching.
         """
-        self.exclude_criteria.append(pattern)
+        self.exclude_criteria.extend(pattern)
         return self
 
-    def should_not_import(self, pattern: str) -> RuleConstraints:
+    def should_not_import(self, *pattern: str) -> RuleConstraints:
         """Define a constraint that the defined modules should
         not import modules that match the given pattern.
 
@@ -67,9 +60,9 @@ class RuleTargets:
 
         E.g. 'mymodule.submodule', 'mymodule.*'
         """
-        return RuleConstraints(self.rule, self).should_not_import(pattern)
+        return RuleConstraints(self.rule, self).should_not_import(*pattern)
 
-    def should_import(self, pattern: str) -> RuleConstraints:
+    def should_import(self, *pattern: str) -> RuleConstraints:
         """Define a constraint that the defined modules should
         import modules that match the given pattern.
 
@@ -77,14 +70,14 @@ class RuleTargets:
 
         E.g. 'mymodule.submodule', 'mymodule.*'
         """
-        return RuleConstraints(self.rule, self).should_import(pattern)
+        return RuleConstraints(self.rule, self).should_import(*pattern)
 
-    def may_import(self, pattern: str) -> RuleConstraints:
+    def may_import(self, *pattern: str) -> RuleConstraints:
         """Loosen the constraints from should_import and
         should_not_import: modules matching may_import are
         excluded/ignored from the constraint check.
         """
-        return RuleConstraints(self.rule, self).may_import(pattern)
+        return RuleConstraints(self.rule, self).may_import(*pattern)
 
 
 class RuleConstraints:
@@ -95,7 +88,7 @@ class RuleConstraints:
         self.required: list[str] = []
         self.ignored: list[str] = []
 
-    def should_not_import(self, pattern: str) -> RuleConstraints:
+    def should_not_import(self, *pattern: str) -> RuleConstraints:
         """Define a constraint that the defined modules should
         not import modules that match the given pattern.
 
@@ -103,10 +96,10 @@ class RuleConstraints:
 
         E.g. 'mymodule.submodule', 'mymodule.*'
         """
-        self.forbidden.append(pattern)
+        self.forbidden.extend(pattern)
         return self
 
-    def should_import(self, pattern: str) -> RuleConstraints:
+    def should_import(self, *pattern: str) -> RuleConstraints:
         """Define a constraint that the defined modules should
         import modules that match the given pattern.
 
@@ -114,15 +107,15 @@ class RuleConstraints:
 
         E.g. 'mymodule.submodule', 'mymodule.*'
         """
-        self.required.append(pattern)
+        self.required.extend(pattern)
         return self
 
-    def may_import(self, pattern: str) -> RuleConstraints:
+    def may_import(self, *pattern: str) -> RuleConstraints:
         """Loosen the constraints from should_import and
         should_not_import: modules matching may_import are
         excluded/ignored from the constraint check.
         """
-        self.ignored.append(pattern)
+        self.ignored.extend(pattern)
         return self
 
     def check(
@@ -208,3 +201,10 @@ class RuleConstraints:
                         f"module '{c}' has FORBIDDEN imports:\n{matches} (matched by /{constraint}/)",
                     ),
                 )
+
+
+def _fmt_rule(name, comment, text):
+    res = f"RULE {name}: {text}"
+    if comment:
+        res += f"\n({comment})"
+    return res

@@ -26,6 +26,15 @@ def test_rule_should_import():
     )
 
 
+def test_rule_should_import_list():
+    (
+        archrule("rule exclusion")
+        .match("pytest_arch.plugin")
+        .should_import("pytest_arch.rule", "pytest")
+        .check(pytest_arch)
+    )
+
+
 def test_toplevel_imports_only():
     (
         archrule("rule exclusion")
