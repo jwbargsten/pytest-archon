@@ -70,6 +70,9 @@ def test_module_boundaries():
         # Make sure that nobody imports internal functions or objects
         # from the module we are looking at.
         # Run the rule check on packageX.
+        # But do only check direct imports, not transitive
+        # (including transitive imports would mean that we will violate the rule,
+        # because an import of "module" will reach "module.internal.B" due to transitiveness)
         (
             archrule(
                 "respect module boundaries",
