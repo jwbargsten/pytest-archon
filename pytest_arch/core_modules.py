@@ -4,12 +4,12 @@ from functools import lru_cache
 from typing import FrozenSet
 
 
-@lru_cache()
+@lru_cache
 def core_modules(version=None) -> FrozenSet[str]:
     if version is None:
         version = sys.version_info
     if version >= (3, 10):
-        modules = sys.stdlib_module_names | set(sys.builtin_module_names)
+        modules = sys.stdlib_module_names | set(sys.builtin_module_names)  # type: ignore[attr-defined]
     else:
         modules_file = _module_file_path(version)
         if not modules_file.exists():

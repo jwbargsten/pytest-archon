@@ -1,17 +1,11 @@
 from __future__ import annotations
 
-import sys
 from fnmatch import fnmatch
 from types import ModuleType
 
-from pytest_check import check
+from pytest_check import check  # type: ignore[import]
 
 from pytest_arch.collect import collect_imports, walk, walk_toplevel
-
-if sys.version_info < (3, 9):
-    from typing import List
-else:
-    List = list
 
 
 def archrule(name: str, comment: str | None = None) -> Rule:

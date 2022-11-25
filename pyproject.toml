@@ -31,7 +31,8 @@ dynamic = ["version"]
 dev = [
     "coverage",
     "flake8",
-    "black"
+    "black",
+    "mypy"
 ]
 
 [tool.setuptools]
