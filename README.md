@@ -2,13 +2,13 @@
 
 [![build_and_test](https://github.com/jwbargsten/pytest-arch/actions/workflows/tests.yml/badge.svg)](https://github.com/jwbargsten/pytest-arch/actions/workflows/tests.yml)
 
-`pytest-arch` is a little tool that helps you structure (large) Python projects.
-This tool allows you to define architectural boundries in your code, also
-known as _forbidden dependencies_.
+`pytest-arch` is a little tool that helps you structure (large) Python projects. This
+tool allows you to define architectural boundaries in your code, also known as
+_forbidden dependencies_.
 
-Explicitly defined architectural boundaries helps you keep your code in shape.
-It avoids the creation of circular dependencies. New people on the project
-are made aware of the structure through a simple set of rules, instead of lore.
+Explicitly defined architectural boundaries helps you keep your code in shape. It avoids
+the creation of circular dependencies. New people on the project are made aware of the
+structure through a simple set of rules, instead of lore.
 
 ## Installation
 
@@ -20,11 +20,11 @@ pip install git+https://github.com/jwbargsten/pytest-arch.git
 
 ## Usage
 
-`pytest-arch` can be used to define architectural boundaries from (unit) tests.
-Because they're unit tests, they can be closely tied to the actual application. 
+`pytest-arch` can be used to define architectural boundaries from (unit) tests. Because
+they're unit tests, they can be closely tied to the actual application.
 
-You can use `pytest-arch` in tests by simply importing the `archrule` function.
-Using this function you can construct import tests:
+You can use `pytest-arch` in tests by simply importing the `archrule` function. Using
+this function you can construct import tests:
 
 ```python
 from pytest_arch import archrule
@@ -47,7 +47,6 @@ def test_rule_basic():
 - `.should_import()` and `.should_not_import()` can be combined and can occur multiple
   times.
 - `.check()` needs either a module object or a string
-
 
 ## Examples
 
@@ -99,9 +98,8 @@ def test_domain():
     )
 ```
 
-
 ## Similar projects
 
-* [Archunit](https://www.archunit.org/) (Java)
-* [Dependency Cruiser](https://github.com/sverweij/dependency-cruiser) (Javascript)
-* [import-linter](https://github.com/seddonym/import-linter) (Python)
+- [Archunit](https://www.archunit.org/) (Java)
+- [Dependency Cruiser](https://github.com/sverweij/dependency-cruiser) (Javascript)
+- [import-linter](https://github.com/seddonym/import-linter) (Python)
