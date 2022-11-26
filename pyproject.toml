@@ -3,7 +3,7 @@ requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pytest-arch"
+name = "pytest-archon"
 description = "Rule your architecture like a real developer"
 authors = [
     { author = "Arjan Molenaar", email = "gaphor@gmail.com" },
@@ -28,7 +28,7 @@ dependencies = [
 dynamic = ["version"]
 
 [project.urls]
-homepage = "https://github.com/jwbargsten/pytest-arch"
+homepage = "https://github.com/jwbargsten/pytest-archon"
 
 [project.optional-dependencies]
 dev = [
@@ -44,7 +44,7 @@ dev = [
 namespaces = true
 
 [tool.setuptools.package-data]
-"pytest_arch.assets" = ["*.txt"]
+"pytest_archon.assets" = ["*.txt"]
 
 [tool.black]
 line-length = 110
@@ -59,4 +59,4 @@ addopts = [
 ]
 
 [project.entry-points.pytest11]
-arch = "pytest_arch.plugin"
+arch = "pytest_archon.plugin"

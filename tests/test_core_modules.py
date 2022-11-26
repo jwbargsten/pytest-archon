@@ -2,7 +2,7 @@ import sys
 
 import pytest
 
-import pytest_arch.core_modules as cm
+import pytest_archon.core_modules as cm
 
 
 def test_read_legacy():

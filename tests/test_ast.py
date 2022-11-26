@@ -1,7 +1,7 @@
 import ast
 from textwrap import dedent
 
-from pytest_arch.collect import extract_imports_ast, walk, walk_toplevel
+from pytest_archon.collect import extract_imports_ast, walk, walk_toplevel
 
 
 def test_parse_imports():

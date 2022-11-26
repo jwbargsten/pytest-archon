@@ -22,10 +22,10 @@ def core_modules(version=None) -> FrozenSet[str]:
 
 def _module_file_path(version):
     if sys.version_info < (3, 9):
-        with importlib.resources.path("pytest_arch", "assets") as p:
+        with importlib.resources.path("pytest_archon", "assets") as p:
             return p / "core-module-lists" / f"{version[0]}.{version[1]}.txt"
     return (
-        importlib.resources.files("pytest_arch")
+        importlib.resources.files("pytest_archon")
         / "assets"
         / "core-module-lists"
         / f"{version[0]}.{version[1]}.txt"

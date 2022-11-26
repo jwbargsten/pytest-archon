@@ -1,70 +1,70 @@
-import pytest_arch
-from pytest_arch import archrule
+import pytest_archon
+from pytest_archon import archrule
 
 
 def test_rule_basic():
-    (archrule("basic rule").match("*.collect").should_not_import("pytest_arch.rule").check(pytest_arch))
+    (archrule("basic rule").match("*.collect").should_not_import("pytest_archon.rule").check(pytest_archon))
 
 
 def test_rule_exclusion():
     (
         archrule("rule exclusion")
-        .exclude("pytest_arch")
+        .exclude("pytest_archon")
         .match("*")
-        .exclude("pytest_arch.plugin")
-        .should_not_import("pytest_arch.rule")
-        .check("pytest_arch")
+        .exclude("pytest_archon.plugin")
+        .should_not_import("pytest_archon.rule")
+        .check("pytest_archon")
     )
 
 
 def test_rule_should_import():
     (
         archrule("rule exclusion")
-        .match("pytest_arch.plugin")
-        .should_import("pytest_arch.rule")
-        .check(pytest_arch)
+        .match("pytest_archon.plugin")
+        .should_import("pytest_archon.rule")
+        .check(pytest_archon)
     )
 
 
 def test_rule_should_import_list():
     (
         archrule("rule exclusion")
-        .match("pytest_arch.plugin")
-        .should_import("pytest_arch.rule", "pytest")
-        .check(pytest_arch)
+        .match("pytest_archon.plugin")
+        .should_import("pytest_archon.rule", "pytest")
+        .check(pytest_archon)
     )
 
 
 def test_toplevel_imports_only():
     (
         archrule("rule exclusion")
-        .match("pytest_arch.plugin")
-        .should_import("pytest_arch.rule")
-        .check(pytest_arch, only_toplevel_imports=True)
+        .match("pytest_archon.plugin")
+        .should_import("pytest_archon.rule")
+        .check(pytest_archon, only_toplevel_imports=True)
     )
 
 
 def test_only_direct():
     (
         archrule("rule exclusion")
-        .match("pytest_arch.plugin")
-        .should_not_import("pytest_arch.collect")
-        .check("pytest_arch", only_direct_imports=True)
+        .match("pytest_archon.plugin")
+        .should_not_import("pytest_archon.collect")
+        .check("pytest_archon", only_direct_imports=True)
     )
 
 
 def test_rule_fail(pytester):
     pytester.makepyfile(
         """
-        from pytest_arch.plugin import archrule
-        import pytest_arch
+        from pytest_archon.plugin import archrule
+        import pytest_archon
 
         def test_rule_fail():
             (
                 archrule("abc", "def")
                 .match("*collect")
                 .should_not_import("importl*")
-                .check(pytest_arch)
+                .check(pytest_archon)
             )
     """
     )

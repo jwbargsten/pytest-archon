@@ -10,7 +10,7 @@ from pathlib import Path
 from types import ModuleType
 from typing import Callable, Dict, Iterator, TypedDict
 
-from pytest_arch.core_modules import core_modules
+from pytest_archon.core_modules import core_modules
 
 # https://docs.djangoproject.com/en/4.1/_modules/django/utils/module_loading/
 # https://stackoverflow.com/questions/54325116/can-i-handle-imports-in-an-abstract-syntax-tree
