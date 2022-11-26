@@ -1,6 +1,6 @@
 import pytest
 
-from pytest_arch.rule import Rule, RuleConstraints, RuleTargets
+from pytest_archon.rule import Rule, RuleConstraints, RuleTargets
 
 
 @pytest.mark.parametrize(

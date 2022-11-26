@@ -1,6 +1,6 @@
 import pytest
 
-from pytest_arch.rule import archrule
+from pytest_archon.rule import archrule
 
 
 @pytest.fixture(name="archrule")

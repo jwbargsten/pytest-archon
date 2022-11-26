@@ -1,8 +1,8 @@
-# pytest-arch
+# pytest-archon
 
-[![build_and_test](https://github.com/jwbargsten/pytest-arch/actions/workflows/tests.yml/badge.svg)](https://github.com/jwbargsten/pytest-arch/actions/workflows/tests.yml)
+[![build_and_test](https://github.com/jwbargsten/pytest-archon/actions/workflows/tests.yml/badge.svg)](https://github.com/jwbargsten/pytest-archon/actions/workflows/tests.yml)
 
-`pytest-arch` is a little tool that helps you structure (large) Python projects. This
+`pytest-archon` is a little tool that helps you structure (large) Python projects. This
 tool allows you to define architectural boundaries in your code, also known as
 _forbidden dependencies_.
 
@@ -15,29 +15,29 @@ structure through a simple set of rules, instead of lore.
 The simple way:
 
 ```sh
-pip install git+https://github.com/jwbargsten/pytest-arch.git
+pip install git+https://github.com/jwbargsten/pytest-archon.git
 ```
 
 ## Usage
 
-`pytest-arch` can be used to define architectural boundaries from (unit) tests. Because
+`pytest-archon` can be used to define architectural boundaries from (unit) tests. Because
 they're unit tests, they can be closely tied to the actual application.
 
-You can use `pytest-arch` in tests by simply importing the `archrule` function. Using
+You can use `pytest-archon` in tests by simply importing the `archrule` function. Using
 this function you can construct import tests:
 
 ```python
-from pytest_arch import archrule
+from pytest_archon import archrule
 
 
 def test_rule_basic():
     (
         archrule("name", comment="some comment")
-        .match("pytest_arch.col*")
-        .exclude("pytest_arch.colgate")
-        .should_not_import("pytest_arch.import_finder")
-        .should_import("pytest_arch.core*")
-        .check("pytest_arch")
+        .match("pytest_archon.col*")
+        .exclude("pytest_archon.colgate")
+        .should_not_import("pytest_archon.import_finder")
+        .should_import("pytest_archon.core*")
+        .check("pytest_archon")
     )
 ```
 

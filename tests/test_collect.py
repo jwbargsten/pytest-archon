@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from pytest_arch.collect import (
+from pytest_archon.collect import (
     collect_imports,
     collect_imports_from_path,
     path_to_module,
