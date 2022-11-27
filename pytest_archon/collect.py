@@ -33,22 +33,6 @@ ImportMap = Dict[
 ]
 
 
-def collect_imports(package: str | ModuleType, walker: Walker) -> ImportMap:
-    if isinstance(package, ModuleType):
-        if not hasattr(package, "__path__"):
-            raise AttributeError(f"module {package.__name__} does not have __path__")
-        package = package.__name__
-
-    all_imports: ImportMap = {}
-    for name, imports in collect_imports_from_path(package_dir(package), package, walker):
-        direct_imports = {imp for imp in imports if imp != name}
-        if name in all_imports:
-            raise KeyError(f"WTF? duplicate module {name}")
-        all_imports[name] = {"direct": direct_imports}
-    update_with_transitive_imports(all_imports)
-    return all_imports
-
-
 # from ast:
 def walk(node: ast.AST, skip_type_checking=False) -> Iterator[ast.AST]:
     todo = deque([node])
@@ -62,6 +46,72 @@ def walk(node: ast.AST, skip_type_checking=False) -> Iterator[ast.AST]:
             yield node
 
 
+class ImportCollector:
+    _cache: Dict[str, set[str]] = {}
+
+    @classmethod
+    def invalidate_caches(cls):
+        cls._cache = {}
+
+    @classmethod
+    def collect_imports(cls, package: str | ModuleType, walker: Walker) -> ImportMap:
+        if isinstance(package, ModuleType):
+            if not hasattr(package, "__path__"):
+                raise AttributeError(f"module {package.__name__} does not have __path__")
+            package = package.__name__
+
+        all_imports: ImportMap = {}
+        for name, imports in cls.collect_imports_from_path(package_dir(package), package, walker):
+            direct_imports = {imp for imp in imports if imp != name}
+            if name in all_imports:
+                raise KeyError(f"WTF? duplicate module {name}")
+            all_imports[name] = {"direct": direct_imports}
+        ImportCollector.update_with_transitive_imports(all_imports)
+        return all_imports
+
+    @classmethod
+    def collect_imports_from_path(
+        cls, path: Path, package: str, walker: Walker = walk
+    ) -> Iterator[tuple[str, set[str]]]:  # type: ignore[type-arg]
+        for py_file in Path(path).glob("**/*.py"):
+            module_name = path_to_module(py_file, path, package)
+            if module_name in cls._cache:
+                yield module_name, cls._cache[module_name]
+                continue
+            tree = ast.parse(py_file.read_bytes())
+            imports = set(extract_imports_ast(walker(tree), module_name))
+            cls._cache[module_name] = imports
+            yield module_name, imports
+
+    @classmethod
+    def update_entry_with_transitive_imports(cls, name, data):
+        node = data[name]
+        transitive = []
+        is_circular = False
+        seen = {}
+        stack = [(name, n) for n in node.get("direct", set())]
+        while stack:
+            head = stack[0]
+            stack = stack[1:]
+
+            transitive.append(head[1])
+            if head in seen:
+                is_circular = True
+                continue
+            seen[head] = True
+            child = data.get(head[1], None)
+            if child is None:
+                continue
+            stack.extend([(head[1], n) for n in child.get("direct", set())])
+        node["transitive"] = set(transitive) - node.get("direct", set())
+        node["is_circular"] = is_circular
+
+    @classmethod
+    def update_with_transitive_imports(cls, data: ImportMap) -> None:
+        for name in data.keys():
+            cls.update_entry_with_transitive_imports(name, data)
+
+
 def walk_toplevel(node: ast.Module) -> Iterator[ast.AST]:
     yield from node.body
 
@@ -73,16 +123,6 @@ def package_dir(package: str) -> Path:
 
     assert spec.origin
     return Path(spec.origin).parent
-
-
-def collect_imports_from_path(
-    path: Path, package: str, walker: Walker = walk
-) -> Iterator[tuple[str, set[str]]]:  # type: ignore[type-arg]
-    for py_file in Path(path).glob("**/*.py"):
-        module_name = path_to_module(py_file, path, package)
-        tree = ast.parse(py_file.read_bytes())
-        imports = extract_imports_ast(walker(tree), module_name)
-        yield module_name, set(imports)
 
 
 def path_to_module(module_path: Path, base_path: Path, package=None) -> str:
@@ -120,34 +160,6 @@ def type_checking_clause(node: ast.AST) -> bool:
         (isinstance(node.test, ast.Name) and node.test.id == "TYPE_CHECKING")
         or (isinstance(node.test, ast.Attribute) and node.test.attr == "TYPE_CHECKING")
     )
-
-
-def update_with_transitive_imports(data: ImportMap) -> None:
-    for imports in data.values():
-        transitive = []
-        is_circular = False
-        seen = {}
-        for imp in imports["direct"]:
-            node = data.get(imp, None)
-            if node is None:
-                continue
-            stack = [(imp, n) for n in node["direct"]]
-            while stack:
-                head = stack[0]
-                stack = stack[1:]
-
-                transitive.append(head[1])
-                if head in seen:
-                    is_circular = True
-                    continue
-                seen[head] = True
-                child = data.get(head[1], None)
-                if child is None:
-                    continue
-                stack.extend([(head[1], n) for n in child["direct"]])
-
-        imports["transitive"] = set(transitive) - imports["direct"]
-        imports["is_circular"] = is_circular
 
 
 # TODO replace with importlib.util.resolve_name ?

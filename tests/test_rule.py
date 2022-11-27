@@ -1,5 +1,6 @@
 import pytest_archon
 from pytest_archon import archrule
+from pytest_archon.collect import ImportCollector
 
 
 def test_rule_basic():
@@ -54,6 +55,7 @@ def test_only_direct():
 
 
 def test_rule_fail(pytester):
+    ImportCollector.invalidate_caches()
     pytester.makepyfile(
         """
         from pytest_archon.plugin import archrule

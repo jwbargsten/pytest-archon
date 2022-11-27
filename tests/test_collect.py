@@ -1,8 +1,7 @@
 from pathlib import Path
 
 from pytest_archon.collect import (
-    collect_imports,
-    collect_imports_from_path,
+    ImportCollector,
     path_to_module,
     resolve_module_or_object_by_path,
     resolve_module_or_object_by_spec,
@@ -11,16 +10,18 @@ from pytest_archon.collect import (
 
 
 def test_collect_modules(create_testset):
+    ImportCollector.invalidate_caches()
     path = create_testset(("mymodule.py", ""))
-    collected = list(name for name, _ in collect_imports_from_path(path, "pkg"))
+    collected = list(name for name, _ in ImportCollector.collect_imports_from_path(path, "pkg"))
     assert "pkg.mymodule" in collected
 
 
 def test_collect_with_system_modules(create_testset):
+    ImportCollector.invalidate_caches()
 
     path = create_testset(("mymodule.py", "import sys, os"))
 
-    name, imports = next(collect_imports_from_path(path, "pkg"))
+    name, imports = next(ImportCollector.collect_imports_from_path(path, "pkg"))
 
     assert name == "pkg.mymodule"
     assert "sys" in imports
@@ -32,26 +33,33 @@ def test_path_to_module():
 
 
 def test_module_imports_other_module(create_testset, monkeypatch):
+    ImportCollector.invalidate_caches()
 
     path = create_testset(("module.py", ""), ("othermodule.py", "import module"))
     monkeypatch.syspath_prepend(str(path))
 
-    module_names = {i for name, imports in collect_imports_from_path(path, "pkg") for i in imports}
+    module_names = {
+        i for name, imports in ImportCollector.collect_imports_from_path(path, "pkg") for i in imports
+    }
 
     assert "module" in module_names
     assert "othermodule" not in module_names
 
 
 def test_module_import_from(create_testset, monkeypatch):
+    ImportCollector.invalidate_caches()
 
     path = create_testset(("module.py", "val = 1"), ("othermodule.py", "from module import val"))
     monkeypatch.syspath_prepend(str(path))
 
-    module_names = {i for name, imports in collect_imports_from_path(path, "pkg") for i in imports}
+    module_names = {
+        i for name, imports in ImportCollector.collect_imports_from_path(path, "pkg") for i in imports
+    }
     assert module_names == {"module"}
 
 
 def test_module_import_nested_modules(create_testset):
+    ImportCollector.invalidate_caches()
 
     path = create_testset(
         ("package/__init__.py", ""),
@@ -59,7 +67,9 @@ def test_module_import_nested_modules(create_testset):
         ("package/othermodule.py", "import package.module"),
     )
 
-    module_names = {i for name, imports in collect_imports_from_path(path, "package") for i in imports}
+    module_names = {
+        i for name, imports in ImportCollector.collect_imports_from_path(path, "package") for i in imports
+    }
 
     assert "package.module" in module_names
     assert "package.othermodule" not in module_names
@@ -67,6 +77,7 @@ def test_module_import_nested_modules(create_testset):
 
 
 def test_relative_imports(create_testset, monkeypatch):
+    ImportCollector.invalidate_caches()
 
     path = create_testset(
         ("package/__init__.py", ""),
@@ -78,7 +89,9 @@ def test_relative_imports(create_testset, monkeypatch):
     monkeypatch.syspath_prepend(str(path))
 
     module_names = {
-        i for name, imports in collect_imports_from_path(path / "package", "package") for i in imports
+        i
+        for name, imports in ImportCollector.collect_imports_from_path(path / "package", "package")
+        for i in imports
     }
 
     assert "package.importme" in module_names
@@ -92,7 +105,7 @@ def test_collect_pkg(create_testset, monkeypatch):
         ("abcz/moduleC.py", ""),
     )
     monkeypatch.syspath_prepend(str(path))
-    data = collect_imports("abcz", walker=walk)
+    data = ImportCollector.collect_imports("abcz", walker=walk)
     assert "abcz.moduleC" in data["abcz.moduleA"]["transitive"]
 
 

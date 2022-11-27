@@ -5,7 +5,7 @@ from types import ModuleType
 
 from pytest_check import check  # type: ignore[import]
 
-from pytest_archon.collect import collect_imports, walk, walk_toplevel
+from pytest_archon.collect import ImportCollector, walk, walk_toplevel
 
 
 def archrule(name: str, comment: str | None = None) -> Rule:
@@ -144,7 +144,7 @@ class RuleConstraints:
             if only_toplevel_imports
             else lambda tree: walk(tree, skip_type_checking=skip_type_checking)
         )
-        all_imports = collect_imports(
+        all_imports = ImportCollector.collect_imports(
             package,
             walker,
         )
