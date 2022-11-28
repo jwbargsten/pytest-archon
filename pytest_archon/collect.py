@@ -8,7 +8,7 @@ from collections import deque
 from importlib.util import find_spec
 from pathlib import Path
 from types import ModuleType
-from typing import Callable, Dict, Iterator, TypedDict
+from typing import Callable, Dict, Iterator, TypedDict, Tuple
 
 from pytest_archon.core_modules import core_modules
 
@@ -48,10 +48,21 @@ def walk(node: ast.AST, skip_type_checking=False) -> Iterator[ast.AST]:
 
 class ImportCollector:
     _cache: Dict[str, set[str]] = {}
+    _transitive_cache: Dict[str, Tuple[set[str], bool]] = {}
+    _use_cache = True
+
+    @classmethod
+    def disable_cache(cls):
+        cls._use_cache = False
+
+    @classmethod
+    def enable_cache(cls):
+        cls._use_cache = True
 
     @classmethod
     def invalidate_caches(cls):
         cls._cache = {}
+        cls._transitive_cache = {}
 
     @classmethod
     def collect_imports(cls, package: str | ModuleType, walker: Walker) -> ImportMap:
@@ -75,7 +86,7 @@ class ImportCollector:
     ) -> Iterator[tuple[str, set[str]]]:  # type: ignore[type-arg]
         for py_file in Path(path).glob("**/*.py"):
             module_name = path_to_module(py_file, path, package)
-            if module_name in cls._cache:
+            if cls._use_cache and module_name in cls._cache:
                 yield module_name, cls._cache[module_name]
                 continue
             tree = ast.parse(py_file.read_bytes())
@@ -83,28 +94,90 @@ class ImportCollector:
             cls._cache[module_name] = imports
             yield module_name, imports
 
+    # https://algowiki-project.org/en/Transitive_closure_of_a_directed_graph#Algorithms_for_solving_the_problem
     @classmethod
-    def update_entry_with_transitive_imports(cls, name, data):
-        node = data[name]
-        transitive = []
-        is_circular = False
+    def update_entry_with_transitive_imports(cls, initial_name, data):
+        initial_imports = data[initial_name].get("direct", set())
         seen = {}
-        stack = [(name, n) for n in node.get("direct", set())]
-        while stack:
-            head = stack[0]
-            stack = stack[1:]
 
-            transitive.append(head[1])
+        # we start with the module "initial_name". Our goal is to get its transitive imports. So we take
+        # the direct imports and do a depth-first-search (DFS) till we collected all transitive imports.
+        #
+        # Along the way we also visit other modules. While visiting them we can collect their
+        # transitive dependencies, too. The "collected transitive dependencies so-far" are in
+        # "trans_of_modules_visited".
+
+        # For DFS we use a stack (only push and pop are allowed with the "head" at the end). How can we
+        # figure out when we collected all transitive dependencies of a visited module?
+        # Here we use a marker entry in the stack. An example stack looks like this:
+        #
+        # (None, m1) <- marker entry. If we reach this entry, we know that all dependencies of
+        #               m1 are processed and we can set the transitive entries for m1
+        # (m1, m2)   <- normal entry. The left (m1 in this case) is the
+        #               originating module, the right is the dependency
+        # (m1, m3)
+        # ...
+
+        # init stack and transitive collection for
+        # the starting module (the stack already starts on lvl deeper)
+        stack = [(None, initial_name)]
+        stack.extend([(initial_name, imp) for imp in initial_imports])
+        trans_of_modules_visited = {initial_name: [set(), False]}
+
+        while stack:
+            head = stack[-1]
+            name, imp = head
+            stack = stack[:-1]
+            if name is None:
+                # we reached a "end" marker
+                transitive, is_circular = trans_of_modules_visited.pop(imp, [set(), False])
+                if cls._use_cache:
+                    cls._transitive_cache[imp] = (transitive, is_circular)
+                if imp in data:
+                    data[imp]["transitive"] = transitive - data[imp]["direct"]
+                    data[imp]["is_circular"] = is_circular
+                continue
+
+            stack.append((None, imp))
+            for v in trans_of_modules_visited.values():
+                v[0].add(imp)
+
             if head in seen:
-                is_circular = True
+                for v in trans_of_modules_visited.values():
+                    v[1] = True
                 continue
             seen[head] = True
-            child = data.get(head[1], None)
+
+            if imp not in trans_of_modules_visited:
+                trans_of_modules_visited[imp] = [set(), False]
+
+            # check the cache of the class
+            # prehaps we find some transitive imports
+            if cls._use_cache and imp in cls._transitive_cache:
+                (transitive, is_circular) = cls._transitive_cache[imp]
+                for v in trans_of_modules_visited.values():
+                    v[0] |= transitive
+                    v[1] = v[1] or is_circular
+                continue
+            # or perhaps the existing entries?
+            elif imp in data and "transitive" in data[imp]:
+                for v in trans_of_modules_visited.values():
+                    v[0] |= data[imp]["transitive"]
+                    v[0] |= data[imp]["direct"]
+                    v[1] = v[1] or data[imp]["is_circular"]
+                continue
+
+            # ok, nothing found, dig deeper
+            child = data.get(imp, None)
             if child is None:
                 continue
-            stack.extend([(head[1], n) for n in child.get("direct", set())])
-        node["transitive"] = set(transitive) - node.get("direct", set())
-        node["is_circular"] = is_circular
+
+            stack.extend([(imp, imp_child) for imp_child in child.get("direct", set())])
+
+        for name, entry in data.items():
+            if "transitive" not in entry:
+                entry["transitive"] = set()
+                entry["is_circular"] = False
 
     @classmethod
     def update_with_transitive_imports(cls, data: ImportMap) -> None:
