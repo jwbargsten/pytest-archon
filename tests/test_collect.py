@@ -20,7 +20,7 @@ def test_collect_with_system_modules(create_testset):
 
     path = create_testset(("mymodule.py", "import sys, os"))
 
-    name, imports = next(collect_imports_from_path(path, "pkg"))
+    name, imports = next(iter(collect_imports_from_path(path, "pkg")))
 
     assert name == "pkg.mymodule"
     assert "sys" in imports

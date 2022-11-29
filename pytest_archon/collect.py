@@ -79,12 +79,14 @@ def package_dir(package: str) -> Path:
 @lru_cache(maxsize=2048)
 def collect_imports_from_path(
     path: Path, package: str, walker: Walker = walk
-) -> Iterator[tuple[str, set[str]]]:  # type: ignore[type-arg]
-    for py_file in Path(path).glob("**/*.py"):
+) -> frozenset[tuple[str, frozenset[str]]]:  # type: ignore[type-arg]
+    def _collect(py_file):
         module_name = path_to_module(py_file, path, package)
         tree = ast.parse(py_file.read_bytes())
         imports = extract_imports_ast(walker(tree), module_name)
-        yield module_name, set(imports)
+        return module_name, frozenset(imports)
+
+    return frozenset(_collect(py_file) for py_file in Path(path).glob("**/*.py"))
 
 
 def path_to_module(module_path: Path, base_path: Path, package=None) -> str:
