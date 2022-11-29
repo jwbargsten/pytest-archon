@@ -94,90 +94,38 @@ class ImportCollector:
             cls._cache[module_name] = imports
             yield module_name, imports
 
-    # https://algowiki-project.org/en/Transitive_closure_of_a_directed_graph#Algorithms_for_solving_the_problem
     @classmethod
-    def update_entry_with_transitive_imports(cls, initial_name, data):
-        initial_imports = data[initial_name].get("direct", set())
+    def update_entry_with_transitive_imports(cls, name, data):
+        node = data[name]
+        transitive = set()
+        is_circular = False
         seen = {}
-
-        # we start with the module "initial_name". Our goal is to get its transitive imports. So we take
-        # the direct imports and do a depth-first-search (DFS) till we collected all transitive imports.
-        #
-        # Along the way we also visit other modules. While visiting them we can collect their
-        # transitive dependencies, too. The "collected transitive dependencies so-far" are in
-        # "trans_of_modules_visited".
-
-        # For DFS we use a stack (only push and pop are allowed with the "head" at the end). How can we
-        # figure out when we collected all transitive dependencies of a visited module?
-        # Here we use a marker entry in the stack. An example stack looks like this:
-        #
-        # (None, m1) <- marker entry. If we reach this entry, we know that all dependencies of
-        #               m1 are processed and we can set the transitive entries for m1
-        # (m1, m2)   <- normal entry. The left (m1 in this case) is the
-        #               originating module, the right is the dependency
-        # (m1, m3)
-        # ...
-
-        # init stack and transitive collection for
-        # the starting module (the stack already starts on lvl deeper)
-        stack = [(None, initial_name)]
-        stack.extend([(initial_name, imp) for imp in initial_imports])
-        trans_of_modules_visited = {initial_name: [set(), False]}
+        stack = [(name, n) for n in node.get("direct", set())]
 
         while stack:
             head = stack[-1]
-            name, imp = head
             stack = stack[:-1]
-            if name is None:
-                # we reached a "end" marker
-                transitive, is_circular = trans_of_modules_visited.pop(imp, [set(), False])
-                if cls._use_cache:
-                    cls._transitive_cache[imp] = (transitive, is_circular)
-                if imp in data:
-                    data[imp]["transitive"] = transitive - data[imp]["direct"]
-                    data[imp]["is_circular"] = is_circular
-                continue
 
-            stack.append((None, imp))
-            for v in trans_of_modules_visited.values():
-                v[0].add(imp)
-
+            transitive.add(head[1])
             if head in seen:
-                for v in trans_of_modules_visited.values():
-                    v[1] = True
+                is_circular = True
                 continue
             seen[head] = True
 
-            if imp not in trans_of_modules_visited:
-                trans_of_modules_visited[imp] = [set(), False]
-
-            # check the cache of the class
-            # prehaps we find some transitive imports
-            if cls._use_cache and imp in cls._transitive_cache:
-                (transitive, is_circular) = cls._transitive_cache[imp]
-                for v in trans_of_modules_visited.values():
-                    v[0] |= transitive
-                    v[1] = v[1] or is_circular
-                continue
-            # or perhaps the existing entries?
-            elif imp in data and "transitive" in data[imp]:
-                for v in trans_of_modules_visited.values():
-                    v[0] |= data[imp]["transitive"]
-                    v[0] |= data[imp]["direct"]
-                    v[1] = v[1] or data[imp]["is_circular"]
-                continue
-
-            # ok, nothing found, dig deeper
-            child = data.get(imp, None)
+            if head[1] in cls._transitive_cache:
+                cache_entry = cls._transitive_cache[head[1]]
+                transitive |= cache_entry[0]
+                is_circular = is_circular or cache_entry[1]
+            child = data.get(head[1], None)
             if child is None:
                 continue
+            stack.extend([(head[1], n) for n in child.get("direct", set())])
 
-            stack.extend([(imp, imp_child) for imp_child in child.get("direct", set())])
+        transitive -= node.get("direct", set())
+        cls._transitive_cache[name] = (transitive, is_circular)
 
-        for name, entry in data.items():
-            if "transitive" not in entry:
-                entry["transitive"] = set()
-                entry["is_circular"] = False
+        node["transitive"] = transitive
+        node["is_circular"] = is_circular
 
     @classmethod
     def update_with_transitive_imports(cls, data: ImportMap) -> None:
