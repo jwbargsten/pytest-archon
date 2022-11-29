@@ -1,7 +1,7 @@
 import ast
 from textwrap import dedent
 
-from pytest_archon.collect import extract_imports_ast, walk, walk_toplevel
+from pytest_archon.collect import extract_imports_ast, walk, walk_runtime, walk_toplevel
 
 
 def test_parse_imports():
@@ -52,7 +52,7 @@ def test_skip_type_checking_marker():
     )
 
     root = ast.parse(code, "test_parse.py")
-    imports = list(extract_imports_ast(walk(root, skip_type_checking=True), ""))
+    imports = list(extract_imports_ast(walk_runtime(root), ""))
 
     # Should this be os.path?
     assert "datetime" not in imports
@@ -70,7 +70,7 @@ def test_skip_typing_dot_type_checking_marker():
     )
 
     root = ast.parse(code, "test_parse.py")
-    imports = list(extract_imports_ast(walk(root, skip_type_checking=True), ""))
+    imports = list(extract_imports_ast(walk_runtime(root), ""))
 
     # Should this be os.path?
     assert "datetime" not in imports
