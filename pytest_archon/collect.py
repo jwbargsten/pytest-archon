@@ -5,6 +5,7 @@ import os
 import re
 import sys
 from collections import deque
+from functools import lru_cache
 from importlib.util import find_spec
 from pathlib import Path
 from types import ModuleType
@@ -75,6 +76,7 @@ def package_dir(package: str) -> Path:
     return Path(spec.origin).parent
 
 
+@lru_cache(maxsize=2048)
 def collect_imports_from_path(
     path: Path, package: str, walker: Walker = walk
 ) -> Iterator[tuple[str, set[str]]]:  # type: ignore[type-arg]
@@ -123,31 +125,29 @@ def type_checking_clause(node: ast.AST) -> bool:
 
 
 def update_with_transitive_imports(data: ImportMap) -> None:
-    for imports in data.values():
-        transitive = []
+    for name, node in data.items():
+        transitive = set()
         is_circular = False
         seen = {}
-        for imp in imports["direct"]:
-            node = data.get(imp, None)
-            if node is None:
+        stack = [(name, n) for n in node.get("direct", set())]
+
+        while stack:
+            head = stack[-1]
+            stack = stack[:-1]
+
+            transitive.add(head[1])
+            if head in seen:
+                is_circular = True
                 continue
-            stack = [(imp, n) for n in node["direct"]]
-            while stack:
-                head = stack[0]
-                stack = stack[1:]
+            seen[head] = True
 
-                transitive.append(head[1])
-                if head in seen:
-                    is_circular = True
-                    continue
-                seen[head] = True
-                child = data.get(head[1], None)
-                if child is None:
-                    continue
-                stack.extend([(head[1], n) for n in child["direct"]])
+            child = data.get(head[1], None)
+            if child is None:
+                continue
+            stack.extend([(head[1], n) for n in child.get("direct", set())])
 
-        imports["transitive"] = set(transitive) - imports["direct"]
-        imports["is_circular"] = is_circular
+        node["transitive"] = transitive - node["direct"]
+        node["is_circular"] = is_circular
 
 
 # TODO replace with importlib.util.resolve_name ?

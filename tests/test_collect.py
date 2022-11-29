@@ -89,11 +89,14 @@ def test_collect_pkg(create_testset, monkeypatch):
         ("abcz/__init__.py", ""),
         ("abcz/moduleA.py", "import abcz.moduleB"),
         ("abcz/moduleB.py", "import abcz.moduleC"),
-        ("abcz/moduleC.py", ""),
+        ("abcz/moduleC.py", "import abcz.moduleD"),
+        ("abcz/moduleD.py", "import abcz.moduleA"),
     )
     monkeypatch.syspath_prepend(str(path))
     data = collect_imports("abcz", walker=walk)
     assert "abcz.moduleC" in data["abcz.moduleA"]["transitive"]
+    assert "abcz.moduleA" in data["abcz.moduleA"]["transitive"]
+    assert data["abcz.moduleA"]["is_circular"]
 
 
 def test_namespace_pkgs(create_testset, monkeypatch):
