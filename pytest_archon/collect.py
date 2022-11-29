@@ -5,6 +5,7 @@ import os
 import re
 import sys
 from collections import deque
+from functools import lru_cache
 from importlib.util import find_spec
 from pathlib import Path
 from types import ModuleType
@@ -49,15 +50,21 @@ def collect_imports(package: str | ModuleType, walker: Walker) -> ImportMap:
     return all_imports
 
 
-# from ast:
-def walk(node: ast.AST, skip_type_checking=False) -> Iterator[ast.AST]:
+def walk(node: ast.AST) -> Iterator[ast.AST]:
+    return ast.walk(node)
+
+
+def walk_runtime(node: ast.AST) -> Iterator[ast.AST]:
+    """Skip TYPE_CHECKING markers.
+
+    The check if pretty rudimentary:
+    it checks for if statements with either TYPE_CHECKING or
+    <somemod>.TYPECHECKING in the expression.
+    """
     todo = deque([node])
     while todo:
         node = todo.popleft()
-        # Skip TYPE_CHECKING markers. The check if pretty rudimentary:
-        # it checks for if statements with either TYPE_CHECKING or <somemod>.TYPECHECKING in the expression.
-        # TODO: should we make this configurable?
-        if not (skip_type_checking and type_checking_clause(node)):
+        if not type_checking_clause(node):
             todo.extend(ast.iter_child_nodes(node))
             yield node
 
@@ -75,14 +82,17 @@ def package_dir(package: str) -> Path:
     return Path(spec.origin).parent
 
 
+@lru_cache(maxsize=2048)
 def collect_imports_from_path(
     path: Path, package: str, walker: Walker = walk
-) -> Iterator[tuple[str, set[str]]]:  # type: ignore[type-arg]
-    for py_file in Path(path).glob("**/*.py"):
+) -> frozenset[tuple[str, frozenset[str]]]:
+    def _collect(py_file):
         module_name = path_to_module(py_file, path, package)
         tree = ast.parse(py_file.read_bytes())
         imports = extract_imports_ast(walker(tree), module_name)
-        yield module_name, set(imports)
+        return module_name, frozenset(imports)
+
+    return frozenset(_collect(py_file) for py_file in Path(path).glob("**/*.py"))
 
 
 def path_to_module(module_path: Path, base_path: Path, package=None) -> str:
@@ -123,31 +133,29 @@ def type_checking_clause(node: ast.AST) -> bool:
 
 
 def update_with_transitive_imports(data: ImportMap) -> None:
-    for imports in data.values():
-        transitive = []
+    for name, node in data.items():
+        transitive = set()
         is_circular = False
         seen = {}
-        for imp in imports["direct"]:
-            node = data.get(imp, None)
-            if node is None:
+        stack = [(name, n) for n in node.get("direct", set())]
+
+        while stack:
+            head = stack[-1]
+            stack = stack[:-1]
+
+            transitive.add(head[1])
+            if head in seen:
+                is_circular = True
                 continue
-            stack = [(imp, n) for n in node["direct"]]
-            while stack:
-                head = stack[0]
-                stack = stack[1:]
+            seen[head] = True
 
-                transitive.append(head[1])
-                if head in seen:
-                    is_circular = True
-                    continue
-                seen[head] = True
-                child = data.get(head[1], None)
-                if child is None:
-                    continue
-                stack.extend([(head[1], n) for n in child["direct"]])
+            child = data.get(head[1], None)
+            if child is None:
+                continue
+            stack.extend([(head[1], n) for n in child.get("direct", set())])
 
-        imports["transitive"] = set(transitive) - imports["direct"]
-        imports["is_circular"] = is_circular
+        node["transitive"] = transitive - node["direct"]
+        node["is_circular"] = is_circular
 
 
 # TODO replace with importlib.util.resolve_name ?

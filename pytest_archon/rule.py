@@ -5,7 +5,7 @@ from types import ModuleType
 
 from pytest_check import check  # type: ignore[import]
 
-from pytest_archon.collect import collect_imports, walk, walk_toplevel
+from pytest_archon.collect import collect_imports, walk, walk_runtime, walk_toplevel
 
 
 def archrule(name: str, comment: str | None = None) -> Rule:
@@ -139,11 +139,15 @@ class RuleConstraints:
         """
         rule_name = self.rule.name
         rule_comment = self.rule.comment
-        walker = (
-            walk_toplevel
-            if only_toplevel_imports
-            else lambda tree: walk(tree, skip_type_checking=skip_type_checking)
-        )
+
+        if only_toplevel_imports:
+            walker = walk_toplevel
+        elif skip_type_checking:
+            walker = walk_runtime
+        else:
+            walker = walk
+
+        print("walker =", walker)
         all_imports = collect_imports(
             package,
             walker,
