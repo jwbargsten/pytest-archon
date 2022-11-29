@@ -29,6 +29,7 @@ dynamic = ["version"]
 
 [project.urls]
 homepage = "https://github.com/jwbargsten/pytest-archon"
+repository = "https://github.com/jwbargsten/pytest-archon"
 
 [project.optional-dependencies]
 dev = [
