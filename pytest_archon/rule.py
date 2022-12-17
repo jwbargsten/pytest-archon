@@ -155,9 +155,9 @@ class RuleConstraints:
         match_criteria = self.targets.match_criteria
         exclude_criteria = self.targets.exclude_criteria
 
-        candidates = []
+        candidates: list[str] = []
         for mp in match_criteria:
-            candidates.extend([k for k in all_imports.keys() if fnmatch(k, mp)])
+            candidates.extend(k for k in all_imports.keys() if fnmatch(k, mp))
         for ep in exclude_criteria:
             candidates = [k for k in candidates if not fnmatch(k, ep)]
 
