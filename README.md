@@ -104,3 +104,4 @@ def test_domain():
 - [Dependency Cruiser](https://github.com/sverweij/dependency-cruiser) (Javascript)
 - [import-linter](https://github.com/seddonym/import-linter) (Python)
 - [pytestarch](https://pypi.org/project/pytestarch/) (Python)
+- [Maintain A Clean Architecture With Dependency Rules - sourcery.ai](https://sourcery.ai/blog/dependency-rules/) (Python)

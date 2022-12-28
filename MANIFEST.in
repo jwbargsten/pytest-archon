@@ -1,2 +1,5 @@
 exclude .*
 prune .github
+include Makefile
+recursive-include pytest_archon *.txt
+include pytest_archon/py.typed

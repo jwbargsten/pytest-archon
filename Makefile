@@ -38,6 +38,10 @@ publish-test: build
 	$(PY) -m twine upload --repository testpypi dist/*
 
 publish: build
+	. $(VENV)/bin/activate && check-manifest
+	. $(VENV)/bin/activate && check-wheel-contents
+	. $(VENV)/bin/activate && pyroma .
+	$(PY) -m twine check dist/*
 	$(PY) -m twine upload dist/*
 
 test-install:

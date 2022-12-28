@@ -20,6 +20,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "License :: OSI Approved :: Apache Software License",
     "Framework :: Pytest",
+    "Development Status :: 5 - Production/Stable",
 ]
 dependencies = [
     "pytest-check",
@@ -36,7 +37,10 @@ dev = [
     "coverage",
     "flake8",
     "black",
-    "mypy"
+    "mypy",
+    "check-manifest",
+    "check-wheel-contents",
+    "pyroma"
 ]
 
 [tool.setuptools_scm]
