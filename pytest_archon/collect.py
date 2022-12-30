@@ -136,7 +136,7 @@ def update_with_transitive_imports(data: ImportMap) -> None:
     for name, node in data.items():
         transitive = set()
         is_circular = False
-        seen = {}
+        seen = set()
         stack = [(name, n) for n in node.get("direct", set())]
 
         while stack:
@@ -147,7 +147,7 @@ def update_with_transitive_imports(data: ImportMap) -> None:
             if head in seen:
                 is_circular = True
                 continue
-            seen[head] = True
+            seen.add(head)
 
             child = data.get(head[1], None)
             if child is None:
