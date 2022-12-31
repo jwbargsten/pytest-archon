@@ -205,29 +205,27 @@ class RuleConstraints:
         module: str,
         all_imports: ImportMap,
         transitive: bool,
-        path: list[str] | None = None,
-        seen: set[str] | None = None,
     ):
-        if path is None:
-            path = []
-        if seen is None:
-            seen = set()
+        seen = set()
 
-        if module in seen or module not in all_imports:
-            return
+        def check(mod, path):
+            if mod in seen or mod not in all_imports:
+                return
 
-        imports = all_imports[module]
+            imports = all_imports[mod]
+            new_path = path + [mod]
+            seen.add(mod)
 
-        new_path = path + [module]
-        seen.add(module)
-        for constraint in self.forbidden:
-            for imp in imports:
-                if any(fnmatch(imp, ignore) for ignore in self.ignored):
-                    continue
-                if fnmatch(imp, constraint):
-                    yield (imp, constraint, list(new_path))
-                elif transitive:
-                    yield from self._check_forbidden_constraints(imp, all_imports, transitive, new_path, seen)
+            for constraint in self.forbidden:
+                for imp in imports:
+                    if any(fnmatch(imp, ignore) for ignore in self.ignored):
+                        continue
+                    if fnmatch(imp, constraint):
+                        yield (imp, constraint, list(new_path))
+                    elif transitive:
+                        yield from check(imp, new_path)
+
+        yield from check(module, [])
 
 
 def _fmt_rule(name, comment, text):
@@ -237,15 +235,17 @@ def _fmt_rule(name, comment, text):
     return res
 
 
-def recurse_imports(module: str, all_imports: ImportMap, seen: set[str] | None = None):
-    if seen is None:
-        seen = set()
+def recurse_imports(module: str, all_imports: ImportMap):
+    seen = set()
 
-    if module in seen or module not in all_imports:
-        return
+    def recurse(mod):
+        if mod in seen or mod not in all_imports:
+            return
 
-    imports = all_imports[module]
-    seen.add(module)
-    for imp in imports:
-        yield from imports
-        yield from recurse_imports(imp, all_imports, seen)
+        imports = all_imports[mod]
+        seen.add(mod)
+        for imp in imports:
+            yield from imports
+            yield from recurse(imp)
+
+    yield from recurse(module)
