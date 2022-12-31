@@ -199,7 +199,7 @@ class RuleConstraints:
                         rule_name,
                         rule_comment,
                         f"module '{candidate}' has FORBIDDEN imports:\n{match} (matched by /{constraint}/), "
-                        "through modules {' ↣ '.join(seen)}.",
+                        f"through modules {' ↣ '.join(seen)}.",
                     ),
                 )
 
