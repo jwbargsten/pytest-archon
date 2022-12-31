@@ -9,7 +9,7 @@ from functools import lru_cache
 from importlib.util import find_spec
 from pathlib import Path
 from types import ModuleType
-from typing import Callable, Dict, Iterator
+from typing import Callable, Dict, Iterator, Set
 
 from pytest_archon.core_modules import core_modules
 
@@ -22,7 +22,7 @@ from pytest_archon.core_modules import core_modules
 Walker = Callable[[ast.Module], Iterator[ast.AST]]
 
 
-ImportMap = Dict[str, set[str]]
+ImportMap = Dict[str, Set[str]]
 
 
 def collect_imports(package: str | ModuleType, walker: Walker) -> ImportMap:
