@@ -170,9 +170,9 @@ class RuleConstraints:
         candidates = sorted(candidates)
 
         for candidate in candidates:
-            for constraint in self._check_required_constraints(
-                candidate, all_imports, not only_direct_imports
-            ):
+            import_map = {candidate: all_imports[candidate]} if only_direct_imports else all_imports
+
+            for constraint in self._check_required_constraints(candidate, import_map):
                 log_failure(
                     _fmt_rule(
                         rule_name,
@@ -181,9 +181,7 @@ class RuleConstraints:
                     ),
                 )
 
-            for match, constraint, seen in self._check_forbidden_constraints(
-                candidate, all_imports, not only_direct_imports
-            ):
+            for match, constraint, seen in self._check_forbidden_constraints(candidate, import_map):
                 log_failure(
                     _fmt_rule(
                         rule_name,
@@ -193,18 +191,15 @@ class RuleConstraints:
                     ),
                 )
 
-    def _check_required_constraints(self, module: str, all_imports: ImportMap, transitive: bool):
-        imports = set(recurse_imports(module, all_imports)) if transitive else all_imports[module]
-
+    def _check_required_constraints(self, module: str, all_imports: ImportMap):
         for constraint in self.required:
-            if not any(imp for imp in imports if fnmatch(imp, constraint)):
+            if not any(imp for imp in recurse_imports(module, all_imports) if fnmatch(imp, constraint)):
                 yield constraint
 
     def _check_forbidden_constraints(
         self,
         module: str,
         all_imports: ImportMap,
-        transitive: bool,
     ):
         seen = set()
 
@@ -221,8 +216,8 @@ class RuleConstraints:
                     if any(fnmatch(imp, ignore) for ignore in self.ignored):
                         continue
                     if fnmatch(imp, constraint):
-                        yield (imp, constraint, list(new_path))
-                    elif transitive:
+                        yield (imp, constraint, new_path)
+                    else:
                         yield from check(imp, new_path)
 
         yield from check(module, [])
