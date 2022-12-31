@@ -182,7 +182,7 @@ class RuleConstraints:
                 )
 
             for match, constraint, seen in self._check_forbidden_constraints(
-                candidate, all_imports, not only_direct_imports, seen=[]
+                candidate, all_imports, not only_direct_imports
             ):
                 log_failure(
                     _fmt_rule(
@@ -194,29 +194,40 @@ class RuleConstraints:
                 )
 
     def _check_required_constraints(self, module: str, all_imports: ImportMap, transitive: bool):
-        imports = set(recurse_imports(module, all_imports, seen=[])) if transitive else all_imports[module]
+        imports = set(recurse_imports(module, all_imports)) if transitive else all_imports[module]
 
         for constraint in self.required:
             if not any(imp for imp in imports if fnmatch(imp, constraint)):
                 yield constraint
 
     def _check_forbidden_constraints(
-        self, module: str, all_imports: ImportMap, transitive: bool, seen: list[str]
+        self,
+        module: str,
+        all_imports: ImportMap,
+        transitive: bool,
+        path: list[str] | None = None,
+        seen: set[str] | None = None,
     ):
+        if path is None:
+            path = []
+        if seen is None:
+            seen = set()
+
         if module in seen or module not in all_imports:
             return
 
         imports = all_imports[module]
 
-        now_seen = seen + [module]
+        new_path = path + [module]
+        seen.add(module)
         for constraint in self.forbidden:
             for imp in imports:
                 if any(fnmatch(imp, ignore) for ignore in self.ignored):
                     continue
                 if fnmatch(imp, constraint):
-                    yield (imp, constraint, now_seen)
+                    yield (imp, constraint, list(new_path))
                 elif transitive:
-                    yield from self._check_forbidden_constraints(imp, all_imports, transitive, now_seen)
+                    yield from self._check_forbidden_constraints(imp, all_imports, transitive, new_path, seen)
 
 
 def _fmt_rule(name, comment, text):
@@ -226,12 +237,15 @@ def _fmt_rule(name, comment, text):
     return res
 
 
-def recurse_imports(module: str, all_imports: ImportMap, seen: list[str]):
+def recurse_imports(module: str, all_imports: ImportMap, seen: set[str] | None = None):
+    if seen is None:
+        seen = set()
+
     if module in seen or module not in all_imports:
         return
 
     imports = all_imports[module]
-    now_seen = seen + [module]
+    seen.add(module)
     for imp in imports:
         yield from imports
-        yield from recurse_imports(imp, all_imports, now_seen)
+        yield from recurse_imports(imp, all_imports, seen)
