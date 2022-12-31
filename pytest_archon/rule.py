@@ -196,9 +196,6 @@ class RuleConstraints:
     def _check_required_constraints(self, module: str, all_imports: ImportMap, transitive: bool):
         imports = set(recurse_imports(module, all_imports, seen=[])) if transitive else all_imports[module]
 
-        for constraint in self.ignored:
-            imports = {imp for imp in imports if not fnmatch(imp, constraint)}
-
         for constraint in self.required:
             if not any(imp for imp in imports if fnmatch(imp, constraint)):
                 yield constraint
