@@ -187,7 +187,9 @@ class RuleConstraints:
             for constraint in self.ignored:
                 imports = {imp for imp in imports if not fnmatch(imp, constraint)}
 
-            for constraint in self._check_required_constraints(imports):
+            for constraint in self._check_required_constraints(
+                candidate, all_imports, not only_direct_imports
+            ):
                 log_failure(
                     _fmt_rule(
                         rule_name,
@@ -196,10 +198,9 @@ class RuleConstraints:
                     ),
                 )
 
-            for out in self._check_forbidden_constraints(
+            for match, constraint, seen in self._check_forbidden_constraints(
                 candidate, all_imports, not only_direct_imports, seen=[]
             ):
-                match, constraint, seen = out
                 log_failure(
                     _fmt_rule(
                         rule_name,
@@ -209,7 +210,12 @@ class RuleConstraints:
                     ),
                 )
 
-    def _check_required_constraints(self, imports: set[str]):
+    def _check_required_constraints(self, module: str, all_imports: ImportMap, transitive: bool):
+        imports = (
+            set(recurse_imports(module, all_imports, seen=[]))
+            if transitive
+            else all_imports[module].get("direct", set())
+        )
         for constraint in self.required:
             if not any(imp for imp in imports if fnmatch(imp, constraint)):
                 yield constraint
@@ -235,3 +241,14 @@ def _fmt_rule(name, comment, text):
     if comment:
         res += f"\n({comment})"
     return res
+
+
+def recurse_imports(module: str, all_imports: ImportMap, seen: list[str]):
+    if module in seen or module not in all_imports:
+        return
+
+    imports = all_imports[module].get("direct", set())
+    now_seen = seen + [module]
+    for imp in imports:
+        yield from imports
+        yield from recurse_imports(imp, all_imports, now_seen)
