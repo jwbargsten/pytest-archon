@@ -9,7 +9,7 @@ from functools import lru_cache
 from importlib.util import find_spec
 from pathlib import Path
 from types import ModuleType
-from typing import Callable, Dict, Iterator, TypedDict
+from typing import Callable, Dict, Iterator
 
 from pytest_archon.core_modules import core_modules
 
@@ -22,16 +22,7 @@ from pytest_archon.core_modules import core_modules
 Walker = Callable[[ast.Module], Iterator[ast.AST]]
 
 
-class Imports(TypedDict, total=False):
-    direct: set[str]
-    transitive: set[str]
-    is_circular: bool
-
-
-ImportMap = Dict[
-    str,
-    Imports,
-]
+ImportMap = Dict[str, set[str]]
 
 
 def collect_imports(package: str | ModuleType, walker: Walker) -> ImportMap:
@@ -45,7 +36,7 @@ def collect_imports(package: str | ModuleType, walker: Walker) -> ImportMap:
         direct_imports = {imp for imp in imports if imp != name}
         if name in all_imports:
             raise KeyError(f"WTF? duplicate module {name}")
-        all_imports[name] = {"direct": direct_imports}
+        all_imports[name] = direct_imports
     return all_imports
 
 

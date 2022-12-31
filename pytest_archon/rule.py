@@ -194,11 +194,7 @@ class RuleConstraints:
                 )
 
     def _check_required_constraints(self, module: str, all_imports: ImportMap, transitive: bool):
-        imports = (
-            set(recurse_imports(module, all_imports, seen=[]))
-            if transitive
-            else all_imports[module].get("direct", set())
-        )
+        imports = set(recurse_imports(module, all_imports, seen=[])) if transitive else all_imports[module]
 
         for constraint in self.ignored:
             imports = {imp for imp in imports if not fnmatch(imp, constraint)}
@@ -213,7 +209,7 @@ class RuleConstraints:
         if module in seen or module not in all_imports:
             return
 
-        imports = all_imports[module].get("direct", set())
+        imports = all_imports[module]
 
         for constraint in self.ignored:
             imports = {imp for imp in imports if not fnmatch(imp, constraint)}
@@ -238,7 +234,7 @@ def recurse_imports(module: str, all_imports: ImportMap, seen: list[str]):
     if module in seen or module not in all_imports:
         return
 
-    imports = all_imports[module].get("direct", set())
+    imports = all_imports[module]
     now_seen = seen + [module]
     for imp in imports:
         yield from imports
