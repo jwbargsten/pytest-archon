@@ -163,7 +163,7 @@ class RuleConstraints:
         if not candidates:
             log_failure(
                 f"NO CANDIDATES MATCHED. Match criteria: {match_criteria}, "
-                "exclude_criteria: {exclude_criteria}",
+                f"exclude_criteria: {exclude_criteria}",
             )
             return
 
