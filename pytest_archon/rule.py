@@ -147,7 +147,6 @@ class RuleConstraints:
         else:
             walker = walk
 
-        print("walker =", walker)
         all_imports = collect_imports(
             package,
             walker,
@@ -169,13 +168,6 @@ class RuleConstraints:
             return
 
         candidates = sorted(candidates)
-
-        if len(candidates) > 4:
-            candidates_to_show = candidates[:2] + ["..."] + candidates[-1:]
-        else:
-            candidates_to_show = candidates
-
-        print(f"rule {rule_name}: candidates are {candidates_to_show}")
 
         for candidate in candidates:
             imports = (
