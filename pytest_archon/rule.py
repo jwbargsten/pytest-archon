@@ -170,16 +170,6 @@ class RuleConstraints:
         candidates = sorted(candidates)
 
         for candidate in candidates:
-            imports = (
-                all_imports[candidate].get("direct", set())
-                if only_direct_imports
-                else all_imports[candidate].get("direct", set())
-                | all_imports[candidate].get("transitive", set())
-            )
-
-            for constraint in self.ignored:
-                imports = {imp for imp in imports if not fnmatch(imp, constraint)}
-
             for constraint in self._check_required_constraints(
                 candidate, all_imports, not only_direct_imports
             ):
@@ -209,6 +199,10 @@ class RuleConstraints:
             if transitive
             else all_imports[module].get("direct", set())
         )
+
+        for constraint in self.ignored:
+            imports = {imp for imp in imports if not fnmatch(imp, constraint)}
+
         for constraint in self.required:
             if not any(imp for imp in imports if fnmatch(imp, constraint)):
                 yield constraint
@@ -220,6 +214,10 @@ class RuleConstraints:
             return
 
         imports = all_imports[module].get("direct", set())
+
+        for constraint in self.ignored:
+            imports = {imp for imp in imports if not fnmatch(imp, constraint)}
+
         now_seen = seen + [module]
         for constraint in self.forbidden:
             for imp in imports:

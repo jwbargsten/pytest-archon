@@ -78,9 +78,26 @@ def test_transitive_dependency_succeeds(create_testset):
         ("abcz/moduleA.py", "import abcz.moduleB"),
         ("abcz/moduleB.py", "import abcz.moduleC"),
         ("abcz/moduleC.py", "import abcz.moduleD"),
-        ("abcz/moduleD.py", "import abcz.moduleA"),
+        ("abcz/moduleD.py", ""),
     )
     archrule("rule exclusion").match("abcz.moduleA").should_import("abcz.moduleD").check("abcz")
+
+
+def test_transitive_dependency_via_may_import_succeeds(create_testset):
+    create_testset(
+        ("abcz/__init__.py", ""),
+        ("abcz/moduleA.py", "import abcz.moduleB"),
+        ("abcz/moduleB.py", "import abcz.moduleC"),
+        ("abcz/moduleC.py", "import abcz.moduleD"),
+        ("abcz/moduleD.py", ""),
+    )
+    (
+        archrule("rule exclusion")
+        .match("abcz.moduleA")
+        .may_import("abcz.moduleC")
+        .should_not_import("abcz.moduleD")
+        .check("abcz")
+    )
 
 
 def test_required_transitive_dependency_fails(create_testset, pytester):
@@ -118,6 +135,7 @@ def test_forbidden_transitive_dependency_fails(create_testset, pytester):
         ("abcz/moduleA.py", "import abcz.moduleB"),
         ("abcz/moduleB.py", "import abcz.moduleC"),
         ("abcz/moduleC.py", "import abcz.moduleD"),
+        ("abcz/moduleD.py", ""),
     )
     pytester.makepyfile(
         """
