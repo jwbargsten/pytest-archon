@@ -4,6 +4,7 @@ from fnmatch import fnmatch
 from types import ModuleType
 
 from pytest_check import check  # type: ignore[import]
+from pytest_check.check_log import log_failure
 
 from pytest_archon.collect import collect_imports, walk, walk_runtime, walk_toplevel
 
@@ -175,36 +176,43 @@ class RuleConstraints:
 
         print(f"rule {rule_name}: candidates are {candidates_to_show}")
 
-        for c in candidates:
+        for candidate in candidates:
             imports = (
-                all_imports[c].get("direct", set())
+                all_imports[candidate].get("direct", set())
                 if only_direct_imports
-                else all_imports[c].get("direct", set()) | all_imports[c].get("transitive", set())
+                else all_imports[candidate].get("direct", set())
+                | all_imports[candidate].get("transitive", set())
             )
 
             for constraint in self.ignored:
                 imports = {imp for imp in imports if not fnmatch(imp, constraint)}
 
-            for constraint in self.required:
-                matches = {imp for imp in imports if fnmatch(imp, constraint)}
-                check.is_true(
-                    matches,
+            for constraint in self._check_required_constraints(imports):
+                log_failure(
                     _fmt_rule(
                         rule_name,
                         rule_comment,
-                        f"module '{c}' is missing REQUIRED imports matching pattern /{constraint}/",
+                        f"module '{candidate}' is missing REQUIRED imports matching pattern /{constraint}/",
                     ),
                 )
-            for constraint in self.forbidden:
-                matches = {imp for imp in imports if fnmatch(imp, constraint)}
-                check.is_false(
-                    matches,
+
+            for match, constraint in self._check_forbidden_constraints(imports):
+                log_failure(
                     _fmt_rule(
                         rule_name,
                         rule_comment,
-                        f"module '{c}' has FORBIDDEN imports:\n{matches} (matched by /{constraint}/)",
+                        f"module '{candidate}' has FORBIDDEN imports:\n{match} (matched by /{constraint}/)",
                     ),
                 )
+
+    def _check_required_constraints(self, imports: set[str]):
+        for constraint in self.required:
+            if not any(imp for imp in imports if fnmatch(imp, constraint)):
+                yield constraint
+
+    def _check_forbidden_constraints(self, imports: set[str]):
+        for constraint in self.forbidden:
+            yield from ((imp, constraint) for imp in imports if fnmatch(imp, constraint))
 
 
 def _fmt_rule(name, comment, text):
