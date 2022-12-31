@@ -123,9 +123,9 @@ def test_required_transitive_dependency_fails(create_testset, pytester):
     )
     result = pytester.runpytest()
     result.assert_outcomes(failed=1)
+    result.stdout.fnmatch_lines("FAILED Rule 'rule exclusion':")
     result.stdout.fnmatch_lines(
-        "FAILURE: RULE rule exclusion: module 'abcz.moduleA' is missing REQUIRED imports "
-        "matching pattern /abcz.moduleD/"
+        "- module 'abcz.moduleA' is missing REQUIRED imports matching pattern /abcz.moduleD/"
     )
 
 
@@ -140,6 +140,7 @@ def test_forbidden_transitive_dependency_fails(create_testset, pytester):
     pytester.makepyfile(
         """
         from pytest_archon.plugin import archrule
+
         import pytest_archon
 
         def test_rule_fail():
@@ -153,6 +154,7 @@ def test_forbidden_transitive_dependency_fails(create_testset, pytester):
     )
     result = pytester.runpytest()
     result.assert_outcomes(failed=1)
-    result.stdout.fnmatch_lines("FAILURE: RULE rule exclusion: module 'abcz.moduleA' has FORBIDDEN imports*")
-    result.stdout.fnmatch_lines("abcz.moduleD (matched by /abcz.moduleD/)*")
-    result.stdout.fnmatch_lines("*through modules abcz.moduleA ↣ abcz.moduleB ↣ abcz.moduleC.*")
+    result.stdout.fnmatch_lines("FAILED Rule 'rule exclusion':")
+    result.stdout.fnmatch_lines("- module 'abcz.moduleA' has FORBIDDEN import*")
+    result.stdout.fnmatch_lines("*abcz.moduleD (matched by /abcz.moduleD/)*")
+    result.stdout.fnmatch_lines("*abcz.moduleA ↣ abcz.moduleB ↣ abcz.moduleC ↣ abcz.moduleD")
