@@ -3,7 +3,7 @@ from __future__ import annotations
 from fnmatch import fnmatch
 from types import ModuleType
 
-from pytest_check.check_log import log_failure
+from pytest_check.check_log import log_failure  # type: ignore[import]
 
 from pytest_archon.collect import ImportMap, collect_imports, walk, walk_runtime, walk_toplevel
 
