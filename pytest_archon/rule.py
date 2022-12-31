@@ -208,12 +208,11 @@ class RuleConstraints:
 
         imports = all_imports[module]
 
-        for constraint in self.ignored:
-            imports = {imp for imp in imports if not fnmatch(imp, constraint)}
-
         now_seen = seen + [module]
         for constraint in self.forbidden:
             for imp in imports:
+                if any(fnmatch(imp, ignore) for ignore in self.ignored):
+                    continue
                 if fnmatch(imp, constraint):
                     yield (imp, constraint, now_seen)
                 elif transitive:
