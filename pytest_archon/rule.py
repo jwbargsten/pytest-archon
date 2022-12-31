@@ -3,7 +3,6 @@ from __future__ import annotations
 from fnmatch import fnmatch
 from types import ModuleType
 
-from pytest_check import check  # type: ignore[import]
 from pytest_check.check_log import log_failure
 
 from pytest_archon.collect import ImportMap, collect_imports, walk, walk_runtime, walk_toplevel
@@ -162,10 +161,12 @@ class RuleConstraints:
         for ep in exclude_criteria:
             candidates = [k for k in candidates if not fnmatch(k, ep)]
 
-        check.is_true(
-            candidates,
-            f"NO CANDIDATES MATCHED. Match criteria: {match_criteria}, exclude_criteria: {exclude_criteria}",
-        )
+        if not candidates:
+            log_failure(
+                f"NO CANDIDATES MATCHED. Match criteria: {match_criteria}, "
+                "exclude_criteria: {exclude_criteria}",
+            )
+            return
 
         candidates = sorted(candidates)
 
