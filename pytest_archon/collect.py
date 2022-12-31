@@ -46,7 +46,6 @@ def collect_imports(package: str | ModuleType, walker: Walker) -> ImportMap:
         if name in all_imports:
             raise KeyError(f"WTF? duplicate module {name}")
         all_imports[name] = {"direct": direct_imports}
-    update_with_transitive_imports(all_imports)
     return all_imports
 
 
@@ -130,32 +129,6 @@ def type_checking_clause(node: ast.AST) -> bool:
         (isinstance(node.test, ast.Name) and node.test.id == "TYPE_CHECKING")
         or (isinstance(node.test, ast.Attribute) and node.test.attr == "TYPE_CHECKING")
     )
-
-
-def update_with_transitive_imports(data: ImportMap) -> None:
-    for name, node in data.items():
-        transitive = set()
-        is_circular = False
-        seen = set()
-        stack = [(name, n) for n in node.get("direct", set())]
-
-        while stack:
-            head = stack[-1]
-            stack = stack[:-1]
-
-            transitive.add(head[1])
-            if head in seen:
-                is_circular = True
-                continue
-            seen.add(head)
-
-            child = data.get(head[1], None)
-            if child is None:
-                continue
-            stack.extend([(head[1], n) for n in child.get("direct", set())])
-
-        node["transitive"] = transitive - node["direct"]
-        node["is_circular"] = is_circular
 
 
 # TODO replace with importlib.util.resolve_name ?

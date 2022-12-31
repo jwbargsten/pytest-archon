@@ -1,12 +1,10 @@
 from pathlib import Path
 
 from pytest_archon.collect import (
-    collect_imports,
     collect_imports_from_path,
     path_to_module,
     resolve_module_or_object_by_path,
     resolve_module_or_object_by_spec,
-    walk,
 )
 
 
@@ -79,20 +77,6 @@ def test_relative_imports(create_testset):
     }
 
     assert "package.importme" in module_names
-
-
-def test_collect_pkg(create_testset):
-    create_testset(
-        ("abcz/__init__.py", ""),
-        ("abcz/moduleA.py", "import abcz.moduleB"),
-        ("abcz/moduleB.py", "import abcz.moduleC"),
-        ("abcz/moduleC.py", "import abcz.moduleD"),
-        ("abcz/moduleD.py", "import abcz.moduleA"),
-    )
-    data = collect_imports("abcz", walker=walk)
-    assert "abcz.moduleC" in data["abcz.moduleA"]["transitive"]
-    assert "abcz.moduleA" in data["abcz.moduleA"]["transitive"]
-    assert data["abcz.moduleA"]["is_circular"]
 
 
 def test_namespace_pkgs(create_testset):
