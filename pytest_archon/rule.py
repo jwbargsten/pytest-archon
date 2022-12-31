@@ -6,7 +6,7 @@ from types import ModuleType
 from pytest_check import check  # type: ignore[import]
 from pytest_check.check_log import log_failure
 
-from pytest_archon.collect import collect_imports, walk, walk_runtime, walk_toplevel
+from pytest_archon.collect import ImportMap, collect_imports, walk, walk_runtime, walk_toplevel
 
 
 def archrule(name: str, comment: str | None = None) -> Rule:
@@ -196,12 +196,16 @@ class RuleConstraints:
                     ),
                 )
 
-            for match, constraint in self._check_forbidden_constraints(imports):
+            for out in self._check_forbidden_constraints(
+                candidate, all_imports, not only_direct_imports, seen=[]
+            ):
+                match, constraint, seen = out
                 log_failure(
                     _fmt_rule(
                         rule_name,
                         rule_comment,
-                        f"module '{candidate}' has FORBIDDEN imports:\n{match} (matched by /{constraint}/)",
+                        f"module '{candidate}' has FORBIDDEN imports:\n{match} (matched by /{constraint}/), "
+                        "through modules {' ↣ '.join(seen)}.",
                     ),
                 )
 
@@ -210,9 +214,20 @@ class RuleConstraints:
             if not any(imp for imp in imports if fnmatch(imp, constraint)):
                 yield constraint
 
-    def _check_forbidden_constraints(self, imports: set[str]):
+    def _check_forbidden_constraints(
+        self, module: str, all_imports: ImportMap, transitive: bool, seen: list[str]
+    ):
+        if module in seen or module not in all_imports:
+            return
+
+        imports = all_imports[module].get("direct", set())
+        now_seen = seen + [module]
         for constraint in self.forbidden:
-            yield from ((imp, constraint) for imp in imports if fnmatch(imp, constraint))
+            for imp in imports:
+                if fnmatch(imp, constraint):
+                    yield (imp, constraint, now_seen)
+                elif transitive:
+                    yield from self._check_forbidden_constraints(imp, all_imports, transitive, now_seen)
 
 
 def _fmt_rule(name, comment, text):
