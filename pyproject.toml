@@ -62,6 +62,9 @@ line_length = 110
 addopts = [
     "--import-mode=importlib",
 ]
+testpaths = [
+    "tests",
+]
 
 [project.entry-points.pytest11]
 arch = "pytest_archon.plugin"
