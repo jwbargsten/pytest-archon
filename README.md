@@ -15,15 +15,15 @@ structure through a simple set of rules, instead of lore.
 The simple way:
 
 ```sh
-pip install git+https://github.com/jwbargsten/pytest-archon.git
+pip install pytest-archon
 ```
 
 ## Usage
 
-`pytest-archon` can be used to define architectural boundaries from (unit) tests. Because
-they're unit tests, they can be closely tied to the actual application.
+_pytest-archon_ can be used to define architectural boundaries from (unit) tests. Because
+they're tests, they can be closely tied to the actual application.
 
-You can use `pytest-archon` in tests by simply importing the `archrule` function. Using
+You can use _pytest-archon_ in tests by simply importing the `archrule` function. Using
 this function you can construct import tests:
 
 ```python
@@ -46,52 +46,35 @@ def test_rule_basic():
 - `.exclude()` is optional
 - `.should_import()` and `.should_not_import()` can be combined and can occur multiple
   times.
+- `.may_import()` can be used in combination with `.should_not_import()`.
 - `.check()` needs either a module object or a string
 
-## Examples
+The `check()` method can have a few optional parameters, that alter the way the checks are performed.
+
+* Without parameters, the whole file is checked for imports. So imports done in functions and methods are also found. Transitive dependencies are also checked
+* Option `only_toplevel_imports=True` will only check for toplevel imports. Conditional imports and import in functions and methods are ignored.
+* `skip_type_checking=True` will check all imports, but skip imports defined in `if typing.TYPE_CHECKING` blocks.
+* `only_direct_imports=True` will only check for imports performed by the module directly and will not check transitive imports.
+* If  `only_toplevel_imports=True`  is set, `skip_type_checking=True` has no effect.
+* Options can be combined.
+
+|   | Check toplevel imports | Check `TYPE_CHECKING` imports | Check conditional imports, and imports in functions and methods | Check transitive imports |
+|---|:---:|:---:|:---:|:---:|
+| no options enabled | ✓  | ✓ | ✓  | ✓  |
+| `skip_type_checking=True` | ✓  | ✗ | ✓  | ✓  |
+| `only_toplevel_imports=True` | ✓  | ✗ | ✗ | ✓  |
+| `only_direct_imports=True` | ✓  | ✓  | ✓  | ✗ |
+
+
+## Example
 
 ```python
-def test_module_boundaries():
-    # you can do:
-    # from packageX.moduleA import functionX
-    # you cannot do
-    # from packageX.moduleA.internal.functionY
-    # so packageX/moduleA/__init__.py contains the exposed API functions,
-    # and only they can be used
-    modules = [
-        "moduleA",
-        "moduleB",
-    ]
-    for m in modules:
-        # Match all files,
-        # but exclude files from the module you want to check
-        # (because the module itself needs to import its internals).
-        # Make sure that nobody imports internal functions or objects
-        # from the module we are looking at.
-        # Run the rule check on packageX.
-        # But do only check direct imports, not transitive ones
-        # (including transitive imports would mean that we will violate the rule,
-        # because an import of "module" will reach "module.internal.B" due to transitivity).
-        (
-            archrule(
-                "respect module boundaries",
-                comment="respect the module boundary and only import from the (sub-)module API",
-            )
-            .match("*")
-            .exclude(f"packageX.{m}.*")
-            .exclude(f"packageX.{m}")
-            .should_not_import(f"packageX.{m}.*")
-            .check("packageX", only_direct_imports=True)
-        )
-
-
 def test_domain():
     # test if the domain model does not import other submodules
     # (the domain model should be standing on its own and be used by other modules)
     (
         archrule("domain", comment="domain does not import any other submodules")
-        .match("packageX.domain.*")
-        .match("packageX.domain")
+        .match("packageX.domain*") # matches packageX.domain and packageX.domain.*
         .should_not_import("packageX*")
         .may_import("packageX.domain.*")
         .check("packageX")
