@@ -2,7 +2,7 @@ def test_rule_basic(archrule):
     (
         archrule("abc", "def")
         .match("*collect")
-        .should_not_import("pytest_archon.import_finder")
+        .should_not_import("pytest_archon.failure")
         .check("pytest_archon")
     )
 
