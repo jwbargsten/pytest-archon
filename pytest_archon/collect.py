@@ -9,7 +9,7 @@ from functools import lru_cache
 from importlib.util import find_spec
 from pathlib import Path
 from types import ModuleType
-from typing import Callable, Dict, Iterator, TypedDict
+from typing import Callable, Dict, Iterator, Set
 
 from pytest_archon.core_modules import core_modules
 
@@ -22,16 +22,7 @@ from pytest_archon.core_modules import core_modules
 Walker = Callable[[ast.Module], Iterator[ast.AST]]
 
 
-class Imports(TypedDict, total=False):
-    direct: set[str]
-    transitive: set[str]
-    is_circular: bool
-
-
-ImportMap = Dict[
-    str,
-    Imports,
-]
+ImportMap = Dict[str, Set[str]]
 
 
 def collect_imports(package: str | ModuleType, walker: Walker) -> ImportMap:
@@ -45,8 +36,7 @@ def collect_imports(package: str | ModuleType, walker: Walker) -> ImportMap:
         direct_imports = {imp for imp in imports if imp != name}
         if name in all_imports:
             raise KeyError(f"WTF? duplicate module {name}")
-        all_imports[name] = {"direct": direct_imports}
-    update_with_transitive_imports(all_imports)
+        all_imports[name] = direct_imports
     return all_imports
 
 
@@ -130,32 +120,6 @@ def type_checking_clause(node: ast.AST) -> bool:
         (isinstance(node.test, ast.Name) and node.test.id == "TYPE_CHECKING")
         or (isinstance(node.test, ast.Attribute) and node.test.attr == "TYPE_CHECKING")
     )
-
-
-def update_with_transitive_imports(data: ImportMap) -> None:
-    for name, node in data.items():
-        transitive = set()
-        is_circular = False
-        seen = {}
-        stack = [(name, n) for n in node.get("direct", set())]
-
-        while stack:
-            head = stack[-1]
-            stack = stack[:-1]
-
-            transitive.add(head[1])
-            if head in seen:
-                is_circular = True
-                continue
-            seen[head] = True
-
-            child = data.get(head[1], None)
-            if child is None:
-                continue
-            stack.extend([(head[1], n) for n in child.get("direct", set())])
-
-        node["transitive"] = transitive - node["direct"]
-        node["is_circular"] = is_circular
 
 
 # TODO replace with importlib.util.resolve_name ?

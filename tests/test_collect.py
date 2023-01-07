@@ -1,12 +1,10 @@
 from pathlib import Path
 
 from pytest_archon.collect import (
-    collect_imports,
     collect_imports_from_path,
     path_to_module,
     resolve_module_or_object_by_path,
     resolve_module_or_object_by_spec,
-    walk,
 )
 
 
@@ -31,10 +29,9 @@ def test_path_to_module():
     assert path_to_module(Path("a/b/./c/d/../e"), Path("a/b/c")) == "d.e"
 
 
-def test_module_imports_other_module(create_testset, monkeypatch):
+def test_module_imports_other_module(create_testset):
 
     path = create_testset(("module.py", ""), ("othermodule.py", "import module"))
-    monkeypatch.syspath_prepend(str(path))
 
     module_names = {i for name, imports in collect_imports_from_path(path, "pkg") for i in imports}
 
@@ -42,10 +39,9 @@ def test_module_imports_other_module(create_testset, monkeypatch):
     assert "othermodule" not in module_names
 
 
-def test_module_import_from(create_testset, monkeypatch):
+def test_module_import_from(create_testset):
 
     path = create_testset(("module.py", "val = 1"), ("othermodule.py", "from module import val"))
-    monkeypatch.syspath_prepend(str(path))
 
     module_names = {i for name, imports in collect_imports_from_path(path, "pkg") for i in imports}
     assert module_names == {"module"}
@@ -66,7 +62,7 @@ def test_module_import_nested_modules(create_testset):
     assert "othermodule" not in module_names
 
 
-def test_relative_imports(create_testset, monkeypatch):
+def test_relative_imports(create_testset):
 
     path = create_testset(
         ("package/__init__.py", ""),
@@ -75,7 +71,6 @@ def test_relative_imports(create_testset, monkeypatch):
         ("package/sub/__init__.py", ""),
         ("package/sub/deep.py", "from ..importme import val"),
     )
-    monkeypatch.syspath_prepend(str(path))
 
     module_names = {
         i for name, imports in collect_imports_from_path(path / "package", "package") for i in imports
@@ -84,28 +79,12 @@ def test_relative_imports(create_testset, monkeypatch):
     assert "package.importme" in module_names
 
 
-def test_collect_pkg(create_testset, monkeypatch):
-    path = create_testset(
-        ("abcz/__init__.py", ""),
-        ("abcz/moduleA.py", "import abcz.moduleB"),
-        ("abcz/moduleB.py", "import abcz.moduleC"),
-        ("abcz/moduleC.py", "import abcz.moduleD"),
-        ("abcz/moduleD.py", "import abcz.moduleA"),
-    )
-    monkeypatch.syspath_prepend(str(path))
-    data = collect_imports("abcz", walker=walk)
-    assert "abcz.moduleC" in data["abcz.moduleA"]["transitive"]
-    assert "abcz.moduleA" in data["abcz.moduleA"]["transitive"]
-    assert data["abcz.moduleA"]["is_circular"]
-
-
-def test_namespace_pkgs(create_testset, monkeypatch):
-    path = create_testset(
+def test_namespace_pkgs(create_testset):
+    create_testset(
         ("package/__init__.py", ""),
         ("package/initless/module.py", "A=3"),
     )
 
-    monkeypatch.syspath_prepend(str(path))
     res = resolve_module_or_object_by_path("package.initless.module.A")
     assert res == "package.initless.module"
 

@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from fnmatch import fnmatch
 from types import ModuleType
+from typing import Iterable, Sequence
 
-from pytest_check import check  # type: ignore[import]
+from pytest_check.check_log import log_failure  # type: ignore[import]
 
-from pytest_archon.collect import collect_imports, walk, walk_runtime, walk_toplevel
+from pytest_archon.collect import ImportMap, collect_imports, walk, walk_runtime, walk_toplevel
 
 
 def archrule(name: str, comment: str | None = None) -> Rule:
@@ -147,7 +148,6 @@ class RuleConstraints:
         else:
             walker = walk
 
-        print("walker =", walker)
         all_imports = collect_imports(
             package,
             walker,
@@ -155,56 +155,63 @@ class RuleConstraints:
         match_criteria = self.targets.match_criteria
         exclude_criteria = self.targets.exclude_criteria
 
-        candidates = []
+        candidates: list[str] = []
         for mp in match_criteria:
-            candidates.extend([k for k in all_imports.keys() if fnmatch(k, mp)])
+            candidates.extend(k for k in all_imports.keys() if fnmatch(k, mp))
         for ep in exclude_criteria:
             candidates = [k for k in candidates if not fnmatch(k, ep)]
 
-        check.is_true(
-            candidates,
-            f"NO CANDIDATES MATCHED. Match criteria: {match_criteria}, exclude_criteria: {exclude_criteria}",
-        )
+        if not candidates:
+            log_failure(
+                f"NO CANDIDATES MATCHED. Match criteria: {match_criteria}, "
+                f"exclude_criteria: {exclude_criteria}",
+            )
+            return
 
         candidates = sorted(candidates)
 
-        if len(candidates) > 4:
-            candidates_to_show = candidates[:2] + ["..."] + candidates[-1:]
-        else:
-            candidates_to_show = candidates
+        for candidate in candidates:
+            import_map = {candidate: all_imports[candidate]} if only_direct_imports else all_imports
 
-        print(f"rule {rule_name}: candidates are {candidates_to_show}")
+            for constraint in self._check_required_constraints(candidate, import_map):
+                log_failure(
+                    _fmt_rule(
+                        rule_name,
+                        rule_comment,
+                        f"module '{candidate}' is missing REQUIRED imports matching pattern /{constraint}/",
+                    ),
+                )
 
-        for c in candidates:
-            imports = (
-                all_imports[c].get("direct", set())
-                if only_direct_imports
-                else all_imports[c].get("direct", set()) | all_imports[c].get("transitive", set())
+            for constraint, path in self._check_forbidden_constraints(candidate, import_map):
+                log_failure(
+                    _fmt_rule(
+                        rule_name,
+                        rule_comment,
+                        f"module '{candidate}' has FORBIDDEN imports:\n{path[-1]} "
+                        f"(matched by /{constraint}/), "
+                        f"through modules {' ↣ '.join(path[:-1])}.",
+                    ),
+                )
+
+    def _check_required_constraints(self, module: str, all_imports: ImportMap):
+        for constraint in self.required:
+            if not any(
+                imp for path in recurse_imports(module, all_imports) if fnmatch(imp := path[-1], constraint)
+            ):
+                yield constraint
+
+    def _check_forbidden_constraints(
+        self,
+        module: str,
+        all_imports: ImportMap,
+    ):
+        for constraint in self.forbidden:
+            yield from (
+                (constraint, path)
+                for path in recurse_imports(module, all_imports)
+                if fnmatch(path[-1], constraint)
+                and not any(fnmatch(m, ignore) for ignore in self.ignored for m in path)
             )
-
-            for constraint in self.ignored:
-                imports = {imp for imp in imports if not fnmatch(imp, constraint)}
-
-            for constraint in self.required:
-                matches = {imp for imp in imports if fnmatch(imp, constraint)}
-                check.is_true(
-                    matches,
-                    _fmt_rule(
-                        rule_name,
-                        rule_comment,
-                        f"module '{c}' is missing REQUIRED imports matching pattern /{constraint}/",
-                    ),
-                )
-            for constraint in self.forbidden:
-                matches = {imp for imp in imports if fnmatch(imp, constraint)}
-                check.is_false(
-                    matches,
-                    _fmt_rule(
-                        rule_name,
-                        rule_comment,
-                        f"module '{c}' has FORBIDDEN imports:\n{matches} (matched by /{constraint}/)",
-                    ),
-                )
 
 
 def _fmt_rule(name, comment, text):
@@ -212,3 +219,20 @@ def _fmt_rule(name, comment, text):
     if comment:
         res += f"\n({comment})"
     return res
+
+
+def recurse_imports(module: str, all_imports: ImportMap) -> Iterable[Sequence[str]]:
+    seen = set()
+
+    def recurse(path):
+        mod = path[-1]
+        if mod in seen or mod not in all_imports:
+            return
+
+        seen.add(mod)
+        for imp in all_imports[mod]:
+            new_path = path + (imp,)
+            yield new_path
+            yield from recurse(new_path)
+
+    yield from recurse((module,))
