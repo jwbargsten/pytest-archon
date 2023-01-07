@@ -23,7 +23,6 @@ classifiers = [
     "Development Status :: 5 - Production/Stable",
 ]
 dependencies = [
-    "pytest-check",
     "pytest>=7.2",
 ]
 dynamic = ["version"]

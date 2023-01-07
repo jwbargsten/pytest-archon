@@ -2,13 +2,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 import re
 
-from fnmatch import fnmatch
+from fnmatch import fnmatchcase
 from types import ModuleType
 from typing import Iterable, Sequence
 
-from pytest_check.check_log import log_failure  # type: ignore[import]
-
 from pytest_archon.collect import ImportMap, collect_imports, walk, walk_runtime, walk_toplevel
+from pytest_archon.failure import add_failure  # type: ignore[import]
 
 
 def archrule(name: str, comment: str | None = None, use_regex: bool = False) -> Rule:
@@ -25,13 +24,13 @@ class RulePattern:
         if self.is_regex:
             return re.search(self.pattern, k)
         else:
-            return fnmatch(k, self.pattern)
+            return fnmatchcase(k, self.pattern)
 
     def __str__(self):
         if self.is_regex:
             return f"regex /{self.pattern}/"
         else:
-            return f"glob /{self.pattern}/"
+            return f"fn pattern /{self.pattern}/"
 
 
 def _as_rule_patterns(use_regex_global, use_regex, patterns):
@@ -193,7 +192,9 @@ class RuleConstraints:
         match_criteria_pretty = [str(c) for c in match_criteria]
         exclude_criteria_pretty = [str(c) for c in exclude_criteria]
         if not candidates:
-            log_failure(
+            add_failure(
+                rule_name,
+                rule_comment,
                 f"NO CANDIDATES MATCHED. Match criteria: {match_criteria_pretty}, "
                 f"exclude_criteria: {exclude_criteria_pretty}",
             )
@@ -205,23 +206,18 @@ class RuleConstraints:
             import_map = {candidate: all_imports[candidate]} if only_direct_imports else all_imports
 
             for constraint in self._check_required_constraints(candidate, import_map):
-                log_failure(
-                    _fmt_rule(
-                        rule_name,
-                        rule_comment,
-                        f"module '{candidate}' is missing REQUIRED imports matching pattern {constraint}",
-                    ),
+                add_failure(
+                    rule_name,
+                    rule_comment,
+                    f"module '{candidate}' is missing REQUIRED imports matching {constraint}",
                 )
 
             for constraint, path in self._check_forbidden_constraints(candidate, import_map):
-                log_failure(
-                    _fmt_rule(
-                        rule_name,
-                        rule_comment,
-                        f"module '{candidate}' has FORBIDDEN imports:\n{path[-1]} "
-                        f"(matched by {constraint}), "
-                        f"through modules {' ↣ '.join(path[:-1])}.",
-                    ),
+                add_failure(
+                    rule_name,
+                    rule_comment,
+                    f"module '{candidate}' has FORBIDDEN import {path[-1]} (matched by {constraint}) ",
+                    path,
                 )
 
     def _check_required_constraints(self, module: str, all_imports: ImportMap):
@@ -243,13 +239,6 @@ class RuleConstraints:
                 if constraint.match(path[-1])
                 and not any(ignore.match(m) for ignore in self.ignored for m in path)
             )
-
-
-def _fmt_rule(name, comment, text):
-    res = f"RULE {name}: {text}"
-    if comment:
-        res += f"\n({comment})"
-    return res
 
 
 def recurse_imports(module: str, all_imports: ImportMap) -> Iterable[Sequence[str]]:
