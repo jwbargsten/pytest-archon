@@ -3,8 +3,8 @@ requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pytest-archon"
-description = "Rule your architecture like a real developer"
+name = "web-and-cli"
+description = "Pytest-archon example project"
 authors = [
     { author = "Arjan Molenaar", email = "gaphor@gmail.com" },
     { author = "Joachim Bargsten", email = "jw@bargsten.org" }
@@ -22,49 +22,13 @@ classifiers = [
     "Framework :: Pytest",
     "Development Status :: 5 - Production/Stable",
 ]
-dependencies = [
-    "pytest-check",
-    "pytest>=7.2",
-]
 dynamic = ["version"]
-
-[project.urls]
-homepage = "https://github.com/jwbargsten/pytest-archon"
-repository = "https://github.com/jwbargsten/pytest-archon"
 
 [project.optional-dependencies]
 dev = [
-    "coverage",
-    "flake8",
-    "black",
-    "mypy",
-    "check-manifest",
-    "check-wheel-contents",
-    "pyroma"
+    "pytest",
+    "pytest-archon",
 ]
-
-[tool.setuptools_scm]
 
 [tool.setuptools.packages.find]
-namespaces = true
-
-[tool.setuptools.package-data]
-"pytest_archon.assets" = ["*.txt"]
-
-[tool.black]
-line-length = 110
-
-[tool.isort]
-profile = "black"
-line_length = 110
-
-[tool.pytest.ini_options]
-addopts = [
-    "--import-mode=importlib",
-]
-testpaths = [
-    "tests",
-]
-
-[project.entry-points.pytest11]
-arch = "pytest_archon.plugin"
+include = ["myapp"]

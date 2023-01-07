@@ -1,0 +1,3 @@
+class AppLogic:
+    def do_something(self):
+        ...
