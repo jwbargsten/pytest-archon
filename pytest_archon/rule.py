@@ -10,11 +10,6 @@ from pytest_archon.collect import ImportMap, collect_imports, walk, walk_runtime
 from pytest_archon.failure import add_failure  # type: ignore[import]
 
 
-def archrule(name: str, comment: str | None = None, use_regex: bool = False) -> Rule:
-    """Define a new architectural rule with a name and an optional comment."""
-    return Rule(name, comment=comment, use_regex=use_regex)
-
-
 @dataclass
 class RulePattern:
     is_regex: bool
@@ -36,6 +31,11 @@ class RulePattern:
 def _as_rule_patterns(use_regex_global, use_regex, patterns):
     use_regex_verdict = use_regex_global if use_regex is None else use_regex
     return [RulePattern(is_regex=use_regex_verdict, pattern=p) for p in patterns]
+
+
+def archrule(name: str, comment: str | None = None, use_regex: bool = False) -> Rule:
+    """Define a new architectural rule with a name and an optional comment."""
+    return Rule(name, comment=comment, use_regex=use_regex)
 
 
 # https://peps.python.org/pep-0451/
