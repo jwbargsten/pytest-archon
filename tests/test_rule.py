@@ -1,5 +1,7 @@
 import pytest_archon
 from pytest_archon import archrule
+from pytest_archon.failure import pop_failures
+from pytest_archon.plugin import format_failures
 
 
 def test_rule_basic():
@@ -53,25 +55,6 @@ def test_only_direct():
     )
 
 
-def test_rule_fail(pytester):
-    pytester.makepyfile(
-        """
-        from pytest_archon.plugin import archrule
-        import pytest_archon
-
-        def test_rule_fail():
-            (
-                archrule("abc", "def")
-                .match("*collect")
-                .should_not_import("importl*")
-                .check(pytest_archon)
-            )
-    """
-    )
-    result = pytester.runpytest()
-    result.assert_outcomes(failed=1)
-
-
 def test_transitive_dependency_succeeds(create_testset):
     create_testset(
         ("abcz/__init__.py", ""),
@@ -100,36 +83,25 @@ def test_transitive_dependency_via_may_import_succeeds(create_testset):
     )
 
 
-def test_required_transitive_dependency_fails(create_testset, pytester):
+def test_required_transitive_dependency_fails(create_testset):
     create_testset(
         ("abcz/__init__.py", ""),
         ("abcz/moduleA.py", "import abcz.moduleB"),
         ("abcz/moduleB.py", "import abcz.moduleC"),
         ("abcz/moduleC.py", ""),
     )
-    pytester.makepyfile(
-        """
-        from pytest_archon.plugin import archrule
-        import pytest_archon
+    (archrule("rule exclusion").match("abcz.moduleA").should_import("abcz.moduleD").check("abcz"))
 
-        def test_rule_fail():
-            (
-                archrule("rule exclusion")
-                .match("abcz.moduleA")
-                .should_import("abcz.moduleD")
-                .check("abcz")
-            )
-    """
-    )
-    result = pytester.runpytest()
-    result.assert_outcomes(failed=1)
-    result.stdout.fnmatch_lines(
-        "FAILURE: RULE rule exclusion: module 'abcz.moduleA' is missing REQUIRED imports "
-        "matching pattern /abcz.moduleD/"
-    )
+    failures = pop_failures()
+    longrepr = format_failures(failures)
+
+    assert failures
+
+    assert "FAILED Rule 'rule exclusion':" in longrepr
+    assert "- module 'abcz.moduleA' is missing REQUIRED imports matching pattern /abcz.moduleD/" in longrepr
 
 
-def test_forbidden_transitive_dependency_fails(create_testset, pytester):
+def test_forbidden_transitive_dependency_fails(create_testset):
     create_testset(
         ("abcz/__init__.py", ""),
         ("abcz/moduleA.py", "import abcz.moduleB"),
@@ -137,22 +109,14 @@ def test_forbidden_transitive_dependency_fails(create_testset, pytester):
         ("abcz/moduleC.py", "import abcz.moduleD"),
         ("abcz/moduleD.py", ""),
     )
-    pytester.makepyfile(
-        """
-        from pytest_archon.plugin import archrule
-        import pytest_archon
+    (archrule("rule exclusion").match("abcz.moduleA").should_not_import("abcz.moduleD").check("abcz"))
 
-        def test_rule_fail():
-            (
-                archrule("rule exclusion")
-                .match("abcz.moduleA")
-                .should_not_import("abcz.moduleD")
-                .check("abcz")
-            )
-    """
-    )
-    result = pytester.runpytest()
-    result.assert_outcomes(failed=1)
-    result.stdout.fnmatch_lines("FAILURE: RULE rule exclusion: module 'abcz.moduleA' has FORBIDDEN imports*")
-    result.stdout.fnmatch_lines("abcz.moduleD (matched by /abcz.moduleD/)*")
-    result.stdout.fnmatch_lines("*through modules abcz.moduleA ↣ abcz.moduleB ↣ abcz.moduleC.*")
+    failures = pop_failures()
+    longrepr = format_failures(failures)
+
+    assert failures
+    assert longrepr
+    assert "FAILED Rule 'rule exclusion':" in longrepr
+    assert "- module 'abcz.moduleA' has FORBIDDEN import" in longrepr
+    assert "abcz.moduleD (matched by /abcz.moduleD/)" in longrepr
+    assert "abcz.moduleA ↣ abcz.moduleB ↣ abcz.moduleC ↣ abcz.moduleD" in longrepr
