@@ -125,7 +125,7 @@ def test_required_transitive_dependency_fails(create_testset, pytester):
     result.assert_outcomes(failed=1)
     result.stdout.fnmatch_lines(
         "FAILURE: RULE rule exclusion: module 'abcz.moduleA' is missing REQUIRED imports "
-        "matching pattern /abcz.moduleD/"
+        "matching pattern glob /abcz.moduleD/"
     )
 
 
@@ -154,5 +154,5 @@ def test_forbidden_transitive_dependency_fails(create_testset, pytester):
     result = pytester.runpytest()
     result.assert_outcomes(failed=1)
     result.stdout.fnmatch_lines("FAILURE: RULE rule exclusion: module 'abcz.moduleA' has FORBIDDEN imports*")
-    result.stdout.fnmatch_lines("abcz.moduleD (matched by /abcz.moduleD/)*")
+    result.stdout.fnmatch_lines("abcz.moduleD (matched by glob /abcz.moduleD/)*")
     result.stdout.fnmatch_lines("*through modules abcz.moduleA ↣ abcz.moduleB ↣ abcz.moduleC.*")
