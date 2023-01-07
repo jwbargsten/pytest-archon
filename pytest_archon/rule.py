@@ -210,13 +210,6 @@ class RuleConstraints:
             )
 
 
-def _fmt_rule(name, comment, text):
-    res = f"RULE {name}: {text}"
-    if comment:
-        res += f"\n({comment})"
-    return res
-
-
 def recurse_imports(module: str, all_imports: ImportMap) -> Iterable[Sequence[str]]:
     seen = set()
 
