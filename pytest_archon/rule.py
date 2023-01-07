@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fnmatch import fnmatch
 from types import ModuleType
+from typing import Iterable, Sequence
 
 from pytest_check.check_log import log_failure  # type: ignore[import]
 
@@ -181,19 +182,22 @@ class RuleConstraints:
                     ),
                 )
 
-            for match, constraint, seen in self._check_forbidden_constraints(candidate, import_map):
+            for constraint, path in self._check_forbidden_constraints(candidate, import_map):
                 log_failure(
                     _fmt_rule(
                         rule_name,
                         rule_comment,
-                        f"module '{candidate}' has FORBIDDEN imports:\n{match} (matched by /{constraint}/), "
-                        f"through modules {' ↣ '.join(seen)}.",
+                        f"module '{candidate}' has FORBIDDEN imports:\n{path[-1]} "
+                        f"(matched by /{constraint}/), "
+                        f"through modules {' ↣ '.join(path[:-1])}.",
                     ),
                 )
 
     def _check_required_constraints(self, module: str, all_imports: ImportMap):
         for constraint in self.required:
-            if not any(imp for imp in recurse_imports(module, all_imports) if fnmatch(imp, constraint)):
+            if not any(
+                imp for path in recurse_imports(module, all_imports) if fnmatch(imp := path[-1], constraint)
+            ):
                 yield constraint
 
     def _check_forbidden_constraints(
@@ -201,26 +205,13 @@ class RuleConstraints:
         module: str,
         all_imports: ImportMap,
     ):
-        seen = set()
-
-        def check(mod, path):
-            if mod in seen or mod not in all_imports:
-                return
-
-            imports = all_imports[mod]
-            new_path = path + [mod]
-            seen.add(mod)
-
-            for constraint in self.forbidden:
-                for imp in imports:
-                    if any(fnmatch(imp, ignore) for ignore in self.ignored):
-                        continue
-                    if fnmatch(imp, constraint):
-                        yield (imp, constraint, new_path)
-                    else:
-                        yield from check(imp, new_path)
-
-        yield from check(module, [])
+        for constraint in self.forbidden:
+            yield from (
+                (constraint, path)
+                for path in recurse_imports(module, all_imports)
+                if fnmatch(path[-1], constraint)
+                and not any(fnmatch(m, ignore) for ignore in self.ignored for m in path)
+            )
 
 
 def _fmt_rule(name, comment, text):
@@ -230,17 +221,18 @@ def _fmt_rule(name, comment, text):
     return res
 
 
-def recurse_imports(module: str, all_imports: ImportMap):
+def recurse_imports(module: str, all_imports: ImportMap) -> Iterable[Sequence[str]]:
     seen = set()
 
-    def recurse(mod):
+    def recurse(path):
+        mod = path[-1]
         if mod in seen or mod not in all_imports:
             return
 
-        imports = all_imports[mod]
         seen.add(mod)
-        for imp in imports:
-            yield from imports
-            yield from recurse(imp)
+        for imp in all_imports[mod]:
+            new_path = path + (imp,)
+            yield new_path
+            yield from recurse(new_path)
 
-    yield from recurse(module)
+    yield from recurse((module,))
