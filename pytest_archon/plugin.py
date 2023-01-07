@@ -28,14 +28,9 @@ def pytest_runtest_makereport(item, call):
         report.wasxfail = item._store[xfailed_key].reason
         return
 
-    longrepr = []
-    for rule_name, rule_failures in groupby(failures, attrgetter("rule_name")):
-        longrepr.append(f"FAILED Rule '{rule_name}':")
-        for reason, reason_failures in groupby(rule_failures, attrgetter("reason")):
-            longrepr.append(f"- {reason}")
-            for path in set(f.path for f in reason_failures):
-                longrepr.append(f"    from {' ↣ '.join(path)}")
-        report.longrepr = "\n".join(longrepr)
+    longrepr = format_failures(failures)
+    if longrepr:
+        report.longrepr = longrepr
         report.outcome = "failed"
 
     if failures:
@@ -44,6 +39,17 @@ def pytest_runtest_makereport(item, call):
         except AssertionError:
             excinfo = ExceptionInfo.from_current()
         call.excinfo = excinfo
+
+
+def format_failures(failures):
+    longrepr = []
+    for rule_name, rule_failures in groupby(failures, attrgetter("rule_name")):
+        longrepr.append(f"FAILED Rule '{rule_name}':")
+        for reason, reason_failures in groupby(rule_failures, attrgetter("reason")):
+            longrepr.append(f"- {reason}")
+            for path in set(f.path for f in reason_failures):
+                longrepr.append(f"    from {' ↣ '.join(path)}")
+    return "\n".join(longrepr)
 
 
 class ModelViolation(AssertionError):

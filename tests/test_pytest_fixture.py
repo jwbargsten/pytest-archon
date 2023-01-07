@@ -23,3 +23,4 @@ def test_rule_fail(pytester):
     )
     result = pytester.runpytest()
     result.assert_outcomes(failed=1)
+    result.stdout.fnmatch_lines("FAILED Rule 'abc':")
