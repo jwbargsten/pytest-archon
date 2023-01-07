@@ -17,6 +17,17 @@ def test_rule_exclusion():
     )
 
 
+def test_rule_exclusion_regex():
+    (
+        archrule("rule exclusion", use_regex=True)
+        .exclude("pytest_archon", use_regex=False)
+        .match(".*")
+        .exclude(r"^pytest_archon\..lugin")
+        .should_not_import(r"^pytest\warchon\.rule$")
+        .check("pytest_archon")
+    )
+
+
 def test_rule_should_import():
     (
         archrule("rule exclusion")

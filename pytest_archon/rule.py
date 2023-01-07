@@ -35,8 +35,8 @@ class RulePattern:
 
 
 def _as_rule_patterns(use_regex_global, use_regex, patterns):
-    use_regex_verdict = use_regex if use_regex is None else use_regex
-    return [RulePattern(use_regex_verdict, p) for p in patterns]
+    use_regex_verdict = use_regex_global if use_regex is None else use_regex
+    return [RulePattern(is_regex=use_regex_verdict, pattern=p) for p in patterns]
 
 
 # https://peps.python.org/pep-0451/
@@ -190,10 +190,12 @@ class RuleConstraints:
         for ep in exclude_criteria:
             candidates = [k for k in candidates if not ep.match(k)]
 
+        match_criteria_pretty = [str(c) for c in match_criteria]
+        exclude_criteria_pretty = [str(c) for c in exclude_criteria]
         if not candidates:
             log_failure(
-                f"NO CANDIDATES MATCHED. Match criteria: {match_criteria}, "
-                f"exclude_criteria: {exclude_criteria}",
+                f"NO CANDIDATES MATCHED. Match criteria: {match_criteria_pretty}, "
+                f"exclude_criteria: {exclude_criteria_pretty}",
             )
             return
 
