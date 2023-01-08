@@ -32,7 +32,7 @@ def _as_rule_patterns(use_regex, patterns):
     return [RulePattern(is_regex=use_regex, pattern=p) for p in patterns]
 
 
-def archrule(name: str, comment: str | None = None, use_regex: bool = False) -> Rule:
+def archrule(name: str, comment: str | None = None, *, use_regex: bool = False) -> Rule:
     """Define a new architectural rule with a name and an optional comment."""
     return Rule(name, comment=comment, use_regex=use_regex)
 
