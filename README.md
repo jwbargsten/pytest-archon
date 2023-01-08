@@ -45,11 +45,7 @@ def test_rule_basic():
   [fnmatch](https://docs.python.org/3/library/fnmatch.html) syntax is used (the
   default). You can also use
   [regular expressions](https://docs.python.org/3/library/re.html#regular-expression-syntax)
-  by supplying the `use_regex=True` argument to `archrule()` or one of the constraint
-  functions, e.g. `.exclude()`, `.should_import()`, etc. Example:
-  `archrule(..., use_regex=True).match(..., use_regex=False)`. NOTE: the
-  `use_regex=False` in `.match()` overrides the global setting in this case, because
-  `.match` is more specific than the global setting in `archrule()`.
+  by supplying the `use_regex=True` argument to `archrule()`. Example: `archrule(..., use_regex=True).match(...)`.
 - `.exclude()` is optional
 - `.should_import()` and `.should_not_import()` can be combined and can occur multiple
   times.
