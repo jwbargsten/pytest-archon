@@ -19,6 +19,17 @@ def test_rule_exclusion():
     )
 
 
+def test_rule_exclusion_regex():
+    (
+        archrule("rule exclusion", use_regex=True)
+        .exclude(r"^pytest_archon$")
+        .match(".*")
+        .exclude(r"^pytest_archon\..lugin")
+        .should_not_import(r"^pytest\warchon\.rule$")
+        .check("pytest_archon")
+    )
+
+
 def test_rule_should_import():
     (
         archrule("rule exclusion")
@@ -98,7 +109,9 @@ def test_required_transitive_dependency_fails(create_testset):
     assert failures
 
     assert "FAILED Rule 'rule exclusion':" in longrepr
-    assert "- module 'abcz.moduleA' is missing REQUIRED imports matching pattern /abcz.moduleD/" in longrepr
+    assert (
+        "- module 'abcz.moduleA' is missing REQUIRED imports matching glob pattern /abcz.moduleD/" in longrepr
+    )
 
 
 def test_forbidden_transitive_dependency_fails(create_testset):
@@ -118,5 +131,5 @@ def test_forbidden_transitive_dependency_fails(create_testset):
     assert longrepr
     assert "FAILED Rule 'rule exclusion':" in longrepr
     assert "- module 'abcz.moduleA' has FORBIDDEN import" in longrepr
-    assert "abcz.moduleD (matched by /abcz.moduleD/)" in longrepr
+    assert "abcz.moduleD (matched by glob pattern /abcz.moduleD/)" in longrepr
     assert "abcz.moduleA ↣ abcz.moduleB ↣ abcz.moduleC ↣ abcz.moduleD" in longrepr

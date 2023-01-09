@@ -1,6 +1,8 @@
 from __future__ import annotations
+from dataclasses import dataclass
+import re
 
-from fnmatch import fnmatch
+from fnmatch import fnmatchcase
 from types import ModuleType
 from typing import Iterable, Sequence
 
@@ -8,40 +10,64 @@ from pytest_archon.collect import ImportMap, collect_imports, walk, walk_runtime
 from pytest_archon.failure import add_failure  # type: ignore[import]
 
 
-def archrule(name: str, comment: str | None = None) -> Rule:
+@dataclass
+class RulePattern:
+    is_regex: bool
+    pattern: str
+
+    def match(self, k: str):
+        if self.is_regex:
+            return re.search(self.pattern, k)
+        else:
+            return fnmatchcase(k, self.pattern)
+
+    def __str__(self):
+        if self.is_regex:
+            return f"regex pattern /{self.pattern}/"
+        else:
+            return f"glob pattern /{self.pattern}/"
+
+
+def _as_rule_patterns(use_regex, patterns):
+    return [RulePattern(is_regex=use_regex, pattern=p) for p in patterns]
+
+
+def archrule(name: str, comment: str | None = None, *, use_regex: bool = False) -> Rule:
     """Define a new architectural rule with a name and an optional comment."""
-    return Rule(name, comment=comment)
+    return Rule(name, comment=comment, use_regex=use_regex)
 
 
 # https://peps.python.org/pep-0451/
 # the path is the package path: where the submodules are in
 class Rule:
-    def __init__(self, name: str, comment: str | None) -> None:
+    def __init__(self, name: str, comment: str | None, use_regex: bool = False) -> None:
         """Define a new architectural rule with a name and a comment."""
         self.name = name
         self.comment = comment
+        self.use_regex = use_regex
 
-    def match(self, *pattern: str) -> RuleTargets:
+    def match(self, *pattern: str, **kwargs) -> RuleTargets:
         """A glob pattern for modules this rule should match."""
-        return RuleTargets(self).match(*pattern)
+        return RuleTargets(self).match(*pattern, **kwargs)
 
-    def exclude(self, *pattern: str) -> RuleTargets:
+    def exclude(self, *pattern: str, **kwargs) -> RuleTargets:
         """A glob pattern for modules this rule should exclude from matching.
 
         Exclusion takes precedence of matching.
         """
-        return RuleTargets(self).exclude(*pattern)
+        return RuleTargets(self).exclude(*pattern, **kwargs)
 
 
 class RuleTargets:
     def __init__(self, rule: Rule) -> None:
         self.rule = rule
-        self.match_criteria: list[str] = []
-        self.exclude_criteria: list[str] = []
+        self.match_criteria: list[RulePattern] = []
+        self.exclude_criteria: list[RulePattern] = []
 
     def match(self, *pattern: str) -> RuleTargets:
         """A glob pattern for modules this rule should match."""
-        self.match_criteria.extend(pattern)
+
+        self.match_criteria.extend(_as_rule_patterns(self.rule.use_regex, pattern))
         return self
 
     def exclude(self, *pattern: str) -> RuleTargets:
@@ -49,10 +75,10 @@ class RuleTargets:
 
         Exclusion takes precedence of matching.
         """
-        self.exclude_criteria.extend(pattern)
+        self.exclude_criteria.extend(_as_rule_patterns(self.rule.use_regex, pattern))
         return self
 
-    def should_not_import(self, *pattern: str) -> RuleConstraints:
+    def should_not_import(self, *pattern: str, **kwargs) -> RuleConstraints:
         """Define a constraint that the defined modules should
         not import modules that match the given pattern.
 
@@ -60,9 +86,9 @@ class RuleTargets:
 
         E.g. 'mymodule.submodule', 'mymodule.*'
         """
-        return RuleConstraints(self.rule, self).should_not_import(*pattern)
+        return RuleConstraints(self.rule, self).should_not_import(*pattern, **kwargs)
 
-    def should_import(self, *pattern: str) -> RuleConstraints:
+    def should_import(self, *pattern: str, **kwargs) -> RuleConstraints:
         """Define a constraint that the defined modules should
         import modules that match the given pattern.
 
@@ -70,23 +96,23 @@ class RuleTargets:
 
         E.g. 'mymodule.submodule', 'mymodule.*'
         """
-        return RuleConstraints(self.rule, self).should_import(*pattern)
+        return RuleConstraints(self.rule, self).should_import(*pattern, **kwargs)
 
-    def may_import(self, *pattern: str) -> RuleConstraints:
+    def may_import(self, *pattern: str, **kwargs) -> RuleConstraints:
         """Loosen the constraints from should_import and
         should_not_import: modules matching may_import are
         excluded/ignored from the constraint check.
         """
-        return RuleConstraints(self.rule, self).may_import(*pattern)
+        return RuleConstraints(self.rule, self).may_import(*pattern, **kwargs)
 
 
 class RuleConstraints:
     def __init__(self, rule: Rule, targets: RuleTargets) -> None:
         self.rule = rule
         self.targets = targets
-        self.forbidden: list[str] = []
-        self.required: list[str] = []
-        self.ignored: list[str] = []
+        self.forbidden: list[RulePattern] = []
+        self.required: list[RulePattern] = []
+        self.ignored: list[RulePattern] = []
 
     def should_not_import(self, *pattern: str) -> RuleConstraints:
         """Define a constraint that the defined modules should
@@ -96,7 +122,7 @@ class RuleConstraints:
 
         E.g. 'mymodule.submodule', 'mymodule.*'
         """
-        self.forbidden.extend(pattern)
+        self.forbidden.extend(_as_rule_patterns(self.rule.use_regex, pattern))
         return self
 
     def should_import(self, *pattern: str) -> RuleConstraints:
@@ -107,7 +133,7 @@ class RuleConstraints:
 
         E.g. 'mymodule.submodule', 'mymodule.*'
         """
-        self.required.extend(pattern)
+        self.required.extend(_as_rule_patterns(self.rule.use_regex, pattern))
         return self
 
     def may_import(self, *pattern: str) -> RuleConstraints:
@@ -115,7 +141,7 @@ class RuleConstraints:
         should_not_import: modules matching may_import are
         excluded/ignored from the constraint check.
         """
-        self.ignored.extend(pattern)
+        self.ignored.extend(_as_rule_patterns(self.rule.use_regex, pattern))
         return self
 
     def check(
@@ -156,16 +182,18 @@ class RuleConstraints:
 
         candidates: list[str] = []
         for mp in match_criteria:
-            candidates.extend(k for k in all_imports.keys() if fnmatch(k, mp))
+            candidates.extend(k for k in all_imports.keys() if mp.match(k))
         for ep in exclude_criteria:
-            candidates = [k for k in candidates if not fnmatch(k, ep)]
+            candidates = [k for k in candidates if not ep.match(k)]
 
+        match_criteria_pretty = [str(c) for c in match_criteria]
+        exclude_criteria_pretty = [str(c) for c in exclude_criteria]
         if not candidates:
             add_failure(
                 rule_name,
                 rule_comment,
-                f"NO CANDIDATES MATCHED. Match criteria: {match_criteria}, "
-                f"exclude_criteria: {exclude_criteria}",
+                f"NO CANDIDATES MATCHED. Match criteria: {match_criteria_pretty}, "
+                f"exclude_criteria: {exclude_criteria_pretty}",
             )
             return
 
@@ -178,21 +206,21 @@ class RuleConstraints:
                 add_failure(
                     rule_name,
                     rule_comment,
-                    f"module '{candidate}' is missing REQUIRED imports matching pattern /{constraint}/",
+                    f"module '{candidate}' is missing REQUIRED imports matching {constraint}",
                 )
 
             for constraint, path in self._check_forbidden_constraints(candidate, import_map):
                 add_failure(
                     rule_name,
                     rule_comment,
-                    f"module '{candidate}' has FORBIDDEN import {path[-1]} (matched by /{constraint}/) ",
+                    f"module '{candidate}' has FORBIDDEN import {path[-1]} (matched by {constraint}) ",
                     path,
                 )
 
     def _check_required_constraints(self, module: str, all_imports: ImportMap):
         for constraint in self.required:
             if not any(
-                imp for path in recurse_imports(module, all_imports) if fnmatch(imp := path[-1], constraint)
+                imp for path in recurse_imports(module, all_imports) if constraint.match(imp := path[-1])
             ):
                 yield constraint
 
@@ -205,8 +233,8 @@ class RuleConstraints:
             yield from (
                 (constraint, path)
                 for path in recurse_imports(module, all_imports)
-                if fnmatch(path[-1], constraint)
-                and not any(fnmatch(m, ignore) for ignore in self.ignored for m in path)
+                if constraint.match(path[-1])
+                and not any(ignore.match(m) for ignore in self.ignored for m in path)
             )
 
 
