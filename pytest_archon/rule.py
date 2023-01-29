@@ -4,9 +4,15 @@ import re
 
 from fnmatch import fnmatchcase
 from types import ModuleType
-from typing import Iterable, Sequence
 
-from pytest_archon.collect import ImportMap, collect_imports, walk, walk_runtime, walk_toplevel
+from pytest_archon.collect import (
+    ImportMap,
+    collect_imports,
+    walk,
+    walk_runtime,
+    walk_toplevel,
+    recurse_imports,
+)
 from pytest_archon.failure import add_failure  # type: ignore[import]
 
 
@@ -202,14 +208,14 @@ class RuleConstraints:
         for candidate in candidates:
             import_map = {candidate: all_imports[candidate]} if only_direct_imports else all_imports
 
-            for constraint in self._check_required_constraints(candidate, import_map):
+            for constraint in self._find_required_constraints(candidate, import_map):
                 add_failure(
                     rule_name,
                     rule_comment,
                     f"module '{candidate}' is missing REQUIRED imports matching {constraint}",
                 )
 
-            for constraint, path in self._check_forbidden_constraints(candidate, import_map):
+            for constraint, path in self._find_forbidden_constraints(candidate, import_map):
                 add_failure(
                     rule_name,
                     rule_comment,
@@ -217,14 +223,14 @@ class RuleConstraints:
                     path,
                 )
 
-    def _check_required_constraints(self, module: str, all_imports: ImportMap):
+    def _find_required_constraints(self, module: str, all_imports: ImportMap):
         for constraint in self.required:
             if not any(
                 imp for path in recurse_imports(module, all_imports) if constraint.match(imp := path[-1])
             ):
                 yield constraint
 
-    def _check_forbidden_constraints(
+    def _find_forbidden_constraints(
         self,
         module: str,
         all_imports: ImportMap,
@@ -233,23 +239,5 @@ class RuleConstraints:
             yield from (
                 (constraint, path)
                 for path in recurse_imports(module, all_imports)
-                if constraint.match(path[-1])
-                and not any(ignore.match(m) for ignore in self.ignored for m in path)
+                if constraint.match(path[-1]) and not any(ignore.match(path[-1]) for ignore in self.ignored)
             )
-
-
-def recurse_imports(module: str, all_imports: ImportMap) -> Iterable[Sequence[str]]:
-    seen = set()
-
-    def recurse(path):
-        mod = path[-1]
-        if mod in seen or mod not in all_imports:
-            return
-
-        seen.add(mod)
-        for imp in all_imports[mod]:
-            new_path = path + (imp,)
-            yield new_path
-            yield from recurse(new_path)
-
-    yield from recurse((module,))

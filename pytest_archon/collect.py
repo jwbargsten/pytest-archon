@@ -9,7 +9,7 @@ from functools import lru_cache
 from importlib.util import find_spec
 from pathlib import Path
 from types import ModuleType
-from typing import Callable, Dict, Iterator, Set
+from typing import Callable, Dict, Iterator, Set, Iterable, Sequence
 
 from pytest_archon.core_modules import core_modules
 
@@ -232,3 +232,20 @@ def resolve_module_or_object_by_path(fqname: str) -> str:
             return fqname
     # we imported an object, return "parent"
     return parent_name
+
+
+def recurse_imports(module: str, all_imports: ImportMap) -> Iterable[Sequence[str]]:
+    seen = set()
+
+    def recurse(path):
+        mod = path[-1]
+        if mod in seen or mod not in all_imports:
+            return
+
+        seen.add(mod)
+        for imp in all_imports[mod]:
+            new_path = path + (imp,)
+            yield new_path
+            yield from recurse(new_path)
+
+    yield from recurse((module,))
