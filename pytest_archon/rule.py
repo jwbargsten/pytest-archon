@@ -4,6 +4,7 @@ import re
 
 from fnmatch import fnmatchcase
 from types import ModuleType
+from typing import Iterable
 
 from pytest_archon.collect import (
     ImportMap,
@@ -157,6 +158,7 @@ class RuleConstraints:
         skip_type_checking=False,
         only_toplevel_imports=False,
         only_direct_imports=False,
+        resolve_whitelist: Iterable[str] | None = None,
     ) -> None:
         """Check the rule against a package or module.
 
@@ -168,6 +170,9 @@ class RuleConstraints:
             Do not traverse functions and methods, looking for imports
         only_direct_imports:
             Only check imports done by the module, not indirect imports
+        resolve_whitelist:
+            A set of (fully qualified) module names to take for granted
+            during module name resolution
         """
         rule_name = self.rule.name
         rule_comment = self.rule.comment
@@ -179,9 +184,11 @@ class RuleConstraints:
         else:
             walker = walk
 
+        resolve_whitelist = frozenset(resolve_whitelist) if resolve_whitelist else None
         all_imports = collect_imports(
             package,
             walker,
+            resolve_whitelist,
         )
         match_criteria = self.targets.match_criteria
         exclude_criteria = self.targets.exclude_criteria

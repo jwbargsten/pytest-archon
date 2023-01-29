@@ -9,7 +9,7 @@ from functools import lru_cache
 from importlib.util import find_spec
 from pathlib import Path
 from types import ModuleType
-from typing import Callable, Dict, Iterator, Set, Iterable, Sequence
+from typing import Callable, Dict, Iterator, Set, Iterable, Sequence, FrozenSet
 
 from pytest_archon.core_modules import core_modules
 
@@ -20,19 +20,19 @@ from pytest_archon.core_modules import core_modules
 
 
 Walker = Callable[[ast.Module], Iterator[ast.AST]]
-
-
 ImportMap = Dict[str, Set[str]]
 
 
-def collect_imports(package: str | ModuleType, walker: Walker) -> ImportMap:
+def collect_imports(
+    package: str | ModuleType, walker: Walker, no_resolve: FrozenSet[str] | None = None
+) -> ImportMap:
     if isinstance(package, ModuleType):
         if not hasattr(package, "__path__"):
             raise AttributeError(f"module {package.__name__} does not have __path__")
         package = package.__name__
 
     all_imports: ImportMap = {}
-    for name, imports in collect_imports_from_path(package_dir(package), package, walker):
+    for name, imports in collect_imports_from_path(package_dir(package), package, walker, no_resolve):
         direct_imports = {imp for imp in imports if imp != name}
         if name in all_imports:
             raise KeyError(f"WTF? duplicate module {name}")
@@ -74,12 +74,12 @@ def package_dir(package: str) -> Path:
 
 @lru_cache(maxsize=2048)
 def collect_imports_from_path(
-    path: Path, package: str, walker: Walker = walk
+    path: Path, package: str, walker: Walker = walk, no_resolve: FrozenSet[str] | None = None
 ) -> frozenset[tuple[str, frozenset[str]]]:
     def _collect(py_file):
         module_name = path_to_module(py_file, path, package)
         tree = ast.parse(py_file.read_bytes())
-        imports = extract_imports_ast(walker(tree), module_name)
+        imports = extract_imports_ast(walker(tree), module_name, no_resolve=no_resolve)
         return module_name, frozenset(imports)
 
     return frozenset(_collect(py_file) for py_file in Path(path).glob("**/*.py"))
@@ -101,7 +101,9 @@ def path_to_module(module_path: Path, base_path: Path, package=None) -> str:
     return re.sub(r"\.+", ".", module)
 
 
-def extract_imports_ast(nodes: Iterator[ast.AST], package: str, resolve=True) -> Iterator[str]:
+def extract_imports_ast(
+    nodes: Iterator[ast.AST], package: str, *, resolve=True, no_resolve: FrozenSet[str] | None = None
+) -> Iterator[str]:
     for node in nodes:
         if isinstance(node, ast.Import):
             for alias in node.names:
@@ -109,7 +111,9 @@ def extract_imports_ast(nodes: Iterator[ast.AST], package: str, resolve=True) ->
         elif isinstance(node, ast.ImportFrom):
             for alias in node.names:
                 fqname = resolve_import_from(alias.name, node.module, package=package, level=node.level)
-                if resolve:
+                if no_resolve and fqname in no_resolve:
+                    yield fqname
+                elif resolve:
                     yield resolve_module_or_object_by_path(fqname)
                 else:
                     yield fqname

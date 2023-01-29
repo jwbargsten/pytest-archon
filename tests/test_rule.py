@@ -1,8 +1,10 @@
+import pytest
+import re
+
 import pytest_archon
 from pytest_archon import archrule
 from pytest_archon.failure import pop_failures
 from pytest_archon.plugin import format_failures
-import re
 
 
 def test_rule_basic():
@@ -64,6 +66,20 @@ def test_only_direct():
         .match("pytest_archon.plugin")
         .should_not_import("pytest_archon.collect")
         .check("pytest_archon", only_direct_imports=True)
+    )
+
+
+def test_skipping_module_resolution(create_testset):
+    create_testset(
+        ("abcz/__init__.py", ""),
+        ("abcz/moduleA.py", "import abcz.moduleB"),
+        ("abcz/moduleB.py", "from i_do_not_exist import i_also_do_not_exist\nimport abcz.moduleC"),
+        ("abcz/moduleC.py", ""),
+    )
+    with pytest.raises(ModuleNotFoundError):
+        archrule("rule exclusion").match("abcz.moduleA").should_import("abcz.moduleC").check("abcz")
+    archrule("rule exclusion").match("abcz.moduleA").should_import("abcz.moduleC").check(
+        "abcz", resolve_whitelist={"i_do_not_exist.i_also_do_not_exist"}
     )
 
 
