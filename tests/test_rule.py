@@ -2,6 +2,7 @@ import pytest_archon
 from pytest_archon import archrule
 from pytest_archon.failure import pop_failures
 from pytest_archon.plugin import format_failures
+import re
 
 
 def test_rule_basic():
@@ -78,6 +79,7 @@ def test_transitive_dependency_succeeds(create_testset):
 
 
 def test_transitive_dependency_via_may_import_succeeds(create_testset):
+    # may_import does not protect against forbidden imports from transitive dependencies
     create_testset(
         ("abcz/__init__.py", ""),
         ("abcz/moduleA.py", "import abcz.moduleB"),
@@ -91,6 +93,63 @@ def test_transitive_dependency_via_may_import_succeeds(create_testset):
         .may_import("abcz.moduleC")
         .should_not_import("abcz.moduleD")
         .check("abcz")
+    )
+    failures = pop_failures()
+    assert len(failures) == 1
+    assert re.search(r"abcz\.moduleA.*has FORBIDDEN import abcz\.moduleD", failures[0].reason)
+
+
+def test_bug_may_import_allows_other_modules_pt1(create_testset):
+    create_testset(
+        ("abcz/__init__.py", ""),
+        ("abcz/common/util.py", "import abcz.app\nimport abcz.common.date"),
+        ("abcz/common/date.py", ""),
+        ("abcz/app.py", ""),
+    )
+
+    (
+        archrule("common has no dependencies")
+        .match("abcz.common*")
+        .should_not_import("abcz*")
+        .may_import("abcz.common*")
+        .check("abcz")
+    )
+    failures = pop_failures()
+    assert len(failures) == 1
+    assert re.search(r"abcz\.common\.util.*has FORBIDDEN import abcz\.app", failures[0].reason)
+
+
+def test_bug_may_import_allows_other_modules_pt2(create_testset):
+    create_testset(
+        ("abcz/__init__.py", ""),
+        ("abcz/common/util.py", "import abcz.app"),
+        ("abcz/app.py", ""),
+    )
+
+    (archrule("common has no dependencies").match("abcz.common*").should_not_import("abcz*").check("abcz"))
+    failures = pop_failures()
+    assert len(failures) == 1
+    assert re.search(r"abcz\.common\.util.*has FORBIDDEN import abcz\.app", failures[0].reason)
+
+
+def test_bug_may_import_allows_other_modules_pt3(create_testset):
+    create_testset(
+        ("abcz/__init__.py", ""),
+        ("abcz/common/util.py", "import abcz.app\nimport abcz.common.date"),
+        ("abcz/common/date.py", ""),
+        ("abcz/app.py", ""),
+    )
+
+    (archrule("common has no dependencies").match("abcz.common*").should_not_import("abcz*").check("abcz"))
+    failures = pop_failures()
+    assert len(failures) == 2
+    assert any(
+        re.search(r"abcz\.common\.util.*has FORBIDDEN import abcz\.app", failure.reason)
+        for failure in failures
+    )
+    assert any(
+        re.search(r"abcz\.common\.util.*has FORBIDDEN import abcz\.common\.date", failure.reason)
+        for failure in failures
     )
 
 

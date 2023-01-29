@@ -5,6 +5,7 @@ from pytest_archon.collect import (
     path_to_module,
     resolve_module_or_object_by_path,
     resolve_module_or_object_by_spec,
+    recurse_imports,
 )
 
 
@@ -97,3 +98,10 @@ def test_resolve_module_or_object_by_spec():
 def test_resolve_module_or_object_by_path():
     res = resolve_module_or_object_by_path("fnmatch.fnmatch")
     assert res == "fnmatch"
+
+
+def test_recurse_imports():
+    all_imports = {"a": ["b", "c"], "b": ["c", "d"], "c": ["e"]}
+    res = list(recurse_imports("a", all_imports))
+
+    assert res == [("a", "b"), ("a", "b", "c"), ("a", "b", "c", "e"), ("a", "b", "d"), ("a", "c")]
