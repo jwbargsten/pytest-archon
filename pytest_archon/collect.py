@@ -110,7 +110,10 @@ def extract_imports_ast(nodes: Iterator[ast.AST], package: str, resolve=True) ->
             for alias in node.names:
                 fqname = resolve_import_from(alias.name, node.module, package=package, level=node.level)
                 if resolve:
-                    yield resolve_module_or_object_by_path(fqname)
+                    try:
+                        yield resolve_module_or_object_by_path(fqname)
+                    except ModuleNotFoundError:
+                        yield fqname
                 else:
                     yield fqname
 
