@@ -192,3 +192,13 @@ def test_forbidden_transitive_dependency_fails(create_testset):
     assert "- module 'abcz.moduleA' has FORBIDDEN import" in longrepr
     assert "abcz.moduleD (matched by glob pattern /abcz.moduleD/)" in longrepr
     assert "abcz.moduleA ↣ abcz.moduleB ↣ abcz.moduleC ↣ abcz.moduleD" in longrepr
+
+
+def test_resolution_non_existing_module(create_testset):
+    create_testset(
+        ("abcz/__init__.py", ""),
+        ("abcz/moduleA.py", "import abcz.moduleB"),
+        ("abcz/moduleB.py", "from i_do_not_exist import i_also_do_not_exist\nimport abcz.moduleC"),
+        ("abcz/moduleC.py", ""),
+    )
+    archrule("rule exclusion").match("abcz.moduleA").should_import("abcz.moduleC").check("abcz")

@@ -10,6 +10,7 @@ from importlib.util import find_spec
 from pathlib import Path
 from types import ModuleType
 from typing import Callable, Dict, Iterator, Set, Iterable, Sequence
+from logging import getLogger
 
 from pytest_archon.core_modules import core_modules
 
@@ -20,9 +21,9 @@ from pytest_archon.core_modules import core_modules
 
 
 Walker = Callable[[ast.Module], Iterator[ast.AST]]
-
-
 ImportMap = Dict[str, Set[str]]
+
+logger = getLogger(__name__)
 
 
 def collect_imports(package: str | ModuleType, walker: Walker) -> ImportMap:
@@ -110,7 +111,14 @@ def extract_imports_ast(nodes: Iterator[ast.AST], package: str, resolve=True) ->
             for alias in node.names:
                 fqname = resolve_import_from(alias.name, node.module, package=package, level=node.level)
                 if resolve:
-                    yield resolve_module_or_object_by_path(fqname)
+                    try:
+                        yield resolve_module_or_object_by_path(fqname)
+                    except ModuleNotFoundError:
+                        logger.warning(
+                            f"Could not determine if {fqname} is a module or function."
+                            " Assuming it is a module."
+                        )
+                        yield fqname
                 else:
                     yield fqname
 
