@@ -88,6 +88,8 @@ def test_domain():
     )
 ```
 
+The blog post [How to tame your Python codebase](https://bargsten.org/wissen/how-to-tame-your-python-codebase/) is also a good overview.
+
 ## Similar projects
 
 - [Archunit](https://www.archunit.org/) (Java)
