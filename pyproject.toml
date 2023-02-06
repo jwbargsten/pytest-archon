@@ -6,8 +6,8 @@ build-backend = "setuptools.build_meta"
 name = "pytest-archon"
 description = "Rule your architecture like a real developer"
 authors = [
-    { author = "Arjan Molenaar", email = "gaphor@gmail.com" },
-    { author = "Joachim Bargsten", email = "jw@bargsten.org" }
+    { name = "Arjan Molenaar", email = "gaphor@gmail.com" },
+    { name = "Joachim Bargsten", email = "jw@bargsten.org" }
 ]
 readme = "README.md"
 requires-python = ">=3.8"
