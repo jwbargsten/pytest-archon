@@ -7,10 +7,10 @@ import sys
 from collections import deque
 from functools import lru_cache
 from importlib.util import find_spec
+from logging import getLogger
 from pathlib import Path
 from types import ModuleType
-from typing import Callable, Dict, Iterator, Set, Iterable, Sequence
-from logging import getLogger
+from typing import Callable, Dict, Iterable, Iterator, Sequence, Set
 
 from pytest_archon.core_modules import core_modules
 

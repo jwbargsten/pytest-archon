@@ -13,5 +13,4 @@ from pytest_archon.rule import Rule, RuleConstraints, RuleTargets
     ],
 )
 def test_docstrings_match(method1, method2):
-
     assert method1.__doc__ == method2.__doc__

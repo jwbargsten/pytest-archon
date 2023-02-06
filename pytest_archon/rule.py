@@ -1,17 +1,17 @@
 from __future__ import annotations
-from dataclasses import dataclass
-import re
 
+import re
+from dataclasses import dataclass
 from fnmatch import fnmatchcase
 from types import ModuleType
 
 from pytest_archon.collect import (
     ImportMap,
     collect_imports,
+    recurse_imports,
     walk,
     walk_runtime,
     walk_toplevel,
-    recurse_imports,
 )
 from pytest_archon.failure import add_failure  # type: ignore[import]
 

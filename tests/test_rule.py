@@ -1,8 +1,9 @@
+import re
+
 import pytest_archon
 from pytest_archon import archrule
 from pytest_archon.failure import pop_failures
 from pytest_archon.plugin import format_failures
-import re
 
 
 def test_rule_basic():

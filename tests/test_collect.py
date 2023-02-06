@@ -3,9 +3,9 @@ from pathlib import Path
 from pytest_archon.collect import (
     collect_imports_from_path,
     path_to_module,
+    recurse_imports,
     resolve_module_or_object_by_path,
     resolve_module_or_object_by_spec,
-    recurse_imports,
 )
 
 
@@ -16,7 +16,6 @@ def test_collect_modules(create_testset):
 
 
 def test_collect_with_system_modules(create_testset):
-
     path = create_testset(("mymodule.py", "import sys, os"))
 
     name, imports = next(iter(collect_imports_from_path(path, "pkg")))
@@ -31,7 +30,6 @@ def test_path_to_module():
 
 
 def test_module_imports_other_module(create_testset):
-
     path = create_testset(("module.py", ""), ("othermodule.py", "import module"))
 
     module_names = {i for name, imports in collect_imports_from_path(path, "pkg") for i in imports}
@@ -41,7 +39,6 @@ def test_module_imports_other_module(create_testset):
 
 
 def test_module_import_from(create_testset):
-
     path = create_testset(("module.py", "val = 1"), ("othermodule.py", "from module import val"))
 
     module_names = {i for name, imports in collect_imports_from_path(path, "pkg") for i in imports}
@@ -49,7 +46,6 @@ def test_module_import_from(create_testset):
 
 
 def test_module_import_nested_modules(create_testset):
-
     path = create_testset(
         ("package/__init__.py", ""),
         ("package/module.py", ""),
@@ -64,7 +60,6 @@ def test_module_import_nested_modules(create_testset):
 
 
 def test_relative_imports(create_testset):
-
     path = create_testset(
         ("package/__init__.py", ""),
         ("package/module.py", "from .importme import val"),
