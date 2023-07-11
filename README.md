@@ -88,6 +88,30 @@ def test_domain():
     )
 ```
 
+### `util` module is used at more than one place
+
+You can also supply custom constraints as predicate functions.
+
+If you, for example, have a common or util module, you might want to make sure that it
+is used at least at two places (otherwise it would not make sense to have a separate
+module).
+
+```python
+from pytest_archon import archrule
+
+
+def test_utils_are_shared():
+    def have_at_least_two_users(util_module, direct_imports, all_imports):
+        # iterate through all imports and find modules using the util_module in question
+        users = [k for k, v in all_imports.items() if util_module in v]
+        # return True if more than two modules use the util_module
+        return len(users) > 2
+
+    archrule("util_is_shared").match("pkg.util").should(have_at_least_two_users).check("pkg")
+```
+
+## See also
+
 The blog post [How to tame your Python codebase](https://bargsten.org/wissen/how-to-tame-your-python-codebase/) is also a good overview.
 
 ## Similar projects
