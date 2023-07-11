@@ -41,6 +41,44 @@ def test_rule_should_import():
     )
 
 
+def test_rule_should_check_predicate1():
+    def have_more_than_2_deps(m, di, ai):
+        return len(di) > 2
+
+    (
+        archrule("rule exclusion")
+        .match("pytest_archon.rule")
+        .should(have_more_than_2_deps)
+        .check(pytest_archon)
+    )
+
+
+def test_rule_should_check_predicate2():
+    def have_collect_import(m, di, ai):
+        return "pytest_archon.collect" in di
+
+    (archrule("rule exclusion").match("pytest_archon.rule").should(have_collect_import).check(pytest_archon))
+
+
+def test_failing_predicate(create_testset):
+    def not_include_module_b(m, di, ai):
+        return "abcz.moduleB" not in di
+
+    create_testset(
+        ("abcz/__init__.py", ""),
+        ("abcz/moduleA.py", "import abcz.moduleB"),
+    )
+    (archrule("rule constraint").match("abcz.moduleA").should(not_include_module_b).check("abcz"))
+
+    failures = pop_failures()
+    longrepr = format_failures(failures)
+
+    assert failures
+
+    assert "FAILED Rule 'rule constraint':" in longrepr
+    assert "- module 'abcz.moduleA' VIOLATED constraint 'not_include_module_b'" in longrepr
+
+
 def test_rule_should_import_list():
     (
         archrule("rule exclusion")

@@ -4,6 +4,8 @@ import re
 from dataclasses import dataclass
 from fnmatch import fnmatchcase
 from types import ModuleType
+from typing import Callable, Set
+
 
 from pytest_archon.collect import (
     ImportMap,
@@ -14,6 +16,9 @@ from pytest_archon.collect import (
     walk_toplevel,
 )
 from pytest_archon.failure import add_failure  # type: ignore[import]
+
+
+ConstraintPredicate = Callable[[str, Set[str], ImportMap], bool]
 
 
 @dataclass
@@ -94,6 +99,21 @@ class RuleTargets:
         """
         return RuleConstraints(self.rule, self).should_not_import(*pattern, **kwargs)
 
+    def should(self, pred: ConstraintPredicate, name=None) -> RuleConstraints:
+        """Define a constraint using a supplied function/predicate.
+
+        If the predicate function returns ``False``, the constraint is
+        considered as being violated.
+
+        :param pred: a function with the signature
+            ``pred(module, direct_imports, all_imports)``
+        :type pred: ConstraintPredicate
+        :param name: An optional name for this constraint. If omitted,
+            the name will be inferred from the predicate function.
+        :rtype: RuleConstraints
+        """
+        return RuleConstraints(self.rule, self).should(pred, name)
+
     def should_import(self, *pattern: str, **kwargs) -> RuleConstraints:
         """Define a constraint that the defined modules should
         import modules that match the given pattern.
@@ -119,6 +139,7 @@ class RuleConstraints:
         self.forbidden: list[RulePattern] = []
         self.required: list[RulePattern] = []
         self.ignored: list[RulePattern] = []
+        self.constraint_preds: list[tuple[ConstraintPredicate, str]] = []
 
     def should_not_import(self, *pattern: str) -> RuleConstraints:
         """Define a constraint that the defined modules should
@@ -140,6 +161,10 @@ class RuleConstraints:
         E.g. 'mymodule.submodule', 'mymodule.*'
         """
         self.required.extend(_as_rule_patterns(self.rule.use_regex, pattern))
+        return self
+
+    def should(self, pred: ConstraintPredicate, name=None):
+        self.constraint_preds.append((pred, name or pred.__name__))
         return self
 
     def may_import(self, *pattern: str) -> RuleConstraints:
@@ -213,14 +238,23 @@ class RuleConstraints:
                     rule_name,
                     rule_comment,
                     f"module '{candidate}' is missing REQUIRED imports matching {constraint}",
+                    ["."],
                 )
 
             for constraint, path in self._find_forbidden_constraints(candidate, import_map):
                 add_failure(
                     rule_name,
                     rule_comment,
-                    f"module '{candidate}' has FORBIDDEN import {path[-1]} (matched by {constraint}) ",
+                    f"module '{candidate}' has FORBIDDEN import {path[-1]} (matched by {constraint})",
                     path,
+                )
+
+            for constraint in self._find_constraint_predicates(candidate, import_map):
+                add_failure(
+                    rule_name,
+                    rule_comment,
+                    f"module '{candidate}' VIOLATED constraint '{constraint}'",
+                    ["."],
                 )
 
     def _find_required_constraints(self, module: str, all_imports: ImportMap):
@@ -229,6 +263,12 @@ class RuleConstraints:
                 imp for path in recurse_imports(module, all_imports) if constraint.match(imp := path[-1])
             ):
                 yield constraint
+
+    def _find_constraint_predicates(self, module: str, all_imports: ImportMap):
+        direct_imports = all_imports[module]
+        for pred, name in self.constraint_preds:
+            if not pred(module, direct_imports, all_imports):
+                yield name
 
     def _find_forbidden_constraints(
         self,
