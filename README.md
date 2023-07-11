@@ -75,6 +75,8 @@ are performed.
 
 ## Example
 
+### Domain model has no dependencies
+
 ```python
 def test_domain():
     # test if the domain model does not import other submodules
