@@ -1,1 +1,3 @@
-from pytest_archon.rule import archrule  # noqa: F401
+from pytest_archon.rule import archrule
+
+__all__ = ["archrule"]
