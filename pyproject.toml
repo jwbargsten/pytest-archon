@@ -44,9 +44,6 @@ dev = [
 
 [tool.setuptools_scm]
 
-[tool.setuptools.packages.find]
-namespaces = true
-
 [tool.setuptools.package-data]
 "pytest_archon.assets" = ["*.txt"]
 
@@ -58,9 +55,10 @@ profile = "black"
 line_length = 110
 
 [tool.pytest.ini_options]
-addopts = [
-    "--import-mode=importlib",
-]
+pythonpath = [ "src", "tests" ]
 
 [project.entry-points.pytest11]
 arch = "pytest_archon.plugin"
+
+[tool.coverage.paths]
+source = ["src"]
