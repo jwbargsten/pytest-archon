@@ -11,10 +11,10 @@ test: $(VENV)/init ## run pytest
 	. $(VENV)/bin/activate && pytest -rA -vvs --log-level INFO
 
 cov: $(VENV)/init ## run pytest
-	. $(VENV)/bin/activate && coverage run --source=pytest_archon --module pytest && coverage report
+	. $(VENV)/bin/activate && coverage run --module pytest && coverage report
 
 lint: $(VENV)/init ## run flake8 to check the code
-	. $(VENV)/bin/activate && flake8 pytest_archon tests && mypy -m pytest_archon
+	. $(VENV)/bin/activate && flake8 src/ tests/ && mypy -m pytest_archon
 
 install-editable: $(VENV)/init
 	. $(VENV)/bin/activate && $(PIP) install -e '.[dev]'
@@ -23,10 +23,10 @@ install: $(VENV)/init
 	. $(VENV)/bin/activate && $(PIP) install '.[dev]'
 
 fmt: $(VENV)/init ## run black to format the code
-	. $(VENV)/bin/activate && black pytest_archon tests
+	. $(VENV)/bin/activate && black src/ tests/
 
 fmt-check: $(VENV)/init ## run black to format the code
-	. $(VENV)/bin/activate && black --check pytest_archon tests
+	. $(VENV)/bin/activate && black --check src/ tests/
 
 clean:
 	rm -rf dist/ build/ *.egg-info
