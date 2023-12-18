@@ -2,4 +2,6 @@ exclude .*
 prune .github
 include Makefile
 recursive-include src/pytest_archon *.txt
+recursive-include tests *.py
+recursive-include src *.py
 include src/pytest_archon/py.typed
