@@ -113,7 +113,7 @@ def extract_imports_ast(nodes: Iterator[ast.AST], package: str, resolve=True) ->
                 if resolve:
                     try:
                         yield resolve_module_or_object_by_path(fqname)
-                    except ModuleNotFoundError:
+                    except (ModuleNotFoundError, ValueError):
                         logger.warning(
                             f"Could not determine if {fqname} is a module or function."
                             " Assuming it is a module."
