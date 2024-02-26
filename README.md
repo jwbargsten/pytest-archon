@@ -124,3 +124,4 @@ The blog post [How to tame your Python codebase](https://bargsten.org/wissen/how
 - [pytestarch](https://pypi.org/project/pytestarch/) (Python)
 - [Maintain A Clean Architecture With Dependency Rules - sourcery.ai](https://sourcery.ai/blog/dependency-rules/)
   (Python)
+- [GitHub - zyskarch/pytestarch: Test framework for software architecture based on imports between modules.](https://github.com/zyskarch/pytestarch) (Python)
