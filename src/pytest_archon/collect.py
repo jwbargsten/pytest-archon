@@ -67,10 +67,18 @@ def walk_toplevel(node: ast.Module) -> Iterator[ast.AST]:
 def package_dir(package: str) -> Path:
     spec = find_spec(package)
     if not spec:
-        raise ModuleNotFoundError(f"could not find the module {package!r}", name=package)
+        raise ModuleNotFoundError(f"Could not find the module {package!r}", name=package)
 
-    assert spec.origin
-    return Path(spec.origin).parent
+    if spec.origin:
+        # Regular module with an origin file
+        return Path(spec.origin).parent
+    elif spec.submodule_search_locations:
+        # Namespace package or package without __init__.py
+        # Return the first search location
+        return Path(spec.submodule_search_locations[0])
+    else:
+        # Built-in module or C extension without a file location
+        raise ValueError(f"Cannot determine package directory for {package!r}")
 
 
 @lru_cache(maxsize=2048)

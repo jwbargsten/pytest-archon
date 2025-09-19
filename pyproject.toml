@@ -34,8 +34,7 @@ repository = "https://github.com/jwbargsten/pytest-archon"
 [project.optional-dependencies]
 dev = [
     "coverage",
-    "flake8",
-    "black",
+    "ruff",
     "mypy",
     "check-manifest",
     "check-wheel-contents",
@@ -47,12 +46,8 @@ dev = [
 [tool.setuptools.package-data]
 "pytest_archon.assets" = ["*.txt"]
 
-[tool.black]
-line-length = 110
-
-[tool.isort]
-profile = "black"
-line_length = 110
+[tool.ruff]
+line-length=111
 
 [tool.pytest.ini_options]
 pythonpath = [ "src", "tests" ]
