@@ -13,8 +13,8 @@ test: $(VENV)/init ## run pytest
 cov: $(VENV)/init ## run pytest
 	. $(VENV)/bin/activate && coverage run --module pytest && coverage report
 
-lint: $(VENV)/init ## run flake8 to check the code
-	. $(VENV)/bin/activate && flake8 src/ tests/ && mypy -m pytest_archon
+lint: $(VENV)/init ## run ruff to check the code
+	. $(VENV)/bin/activate && ruff check src/ tests/
 
 install-editable: $(VENV)/init
 	. $(VENV)/bin/activate && $(PIP) install -e '.[dev]'
@@ -23,12 +23,11 @@ install: $(VENV)/init
 	. $(VENV)/bin/activate && $(PIP) install '.[dev]'
 
 fmt: $(VENV)/init ## format the source code with ruff
-	ruff format src/ tests/
-	ruff check --fix src/ tests/
+	. $(VENV)/bin/activate && ruff format src/ tests/
+	. $(VENV)/bin/activate && ruff check --fix src/ tests/
 
 fmt-check: $(VENV)/init ## run ruff to check the code
-	ruff check src/ tests/
-	ruff format --check --exclude src/pytest_archon/_version.py src/ tests/
+	. $(VENV)/bin/activate && ruff format --check --exclude src/pytest_archon/_version.py src/ tests/
 
 clean:
 	rm -rf dist/ build/ *.egg-info
