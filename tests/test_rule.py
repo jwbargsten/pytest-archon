@@ -45,12 +45,7 @@ def test_rule_should_check_predicate1():
     def have_more_than_2_deps(m, di, ai):
         return len(di) > 2
 
-    (
-        archrule("rule exclusion")
-        .match("pytest_archon.rule")
-        .should(have_more_than_2_deps)
-        .check(pytest_archon)
-    )
+    (archrule("rule exclusion").match("pytest_archon.rule").should(have_more_than_2_deps).check(pytest_archon))
 
 
 def test_rule_should_check_predicate2():

@@ -22,11 +22,13 @@ install-editable: $(VENV)/init
 install: $(VENV)/init
 	. $(VENV)/bin/activate && $(PIP) install '.[dev]'
 
-fmt: $(VENV)/init ## run black to format the code
-	. $(VENV)/bin/activate && black src/ tests/
+fmt: $(VENV)/init ## format the source code with ruff
+	ruff format src/ tests/
+	ruff check --fix src/ tests/
 
-fmt-check: $(VENV)/init ## run black to format the code
-	. $(VENV)/bin/activate && black --check src/ tests/
+fmt-check: $(VENV)/init ## run ruff to check the code
+	ruff check src/ tests/
+	ruff format --check --exclude src/pytest_archon/_version.py src/ tests/
 
 clean:
 	rm -rf dist/ build/ *.egg-info
