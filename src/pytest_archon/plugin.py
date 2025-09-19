@@ -7,13 +7,12 @@ from _pytest._code.code import ExceptionInfo
 from pytest_archon.failure import pop_failures
 from pytest_archon.rule import archrule
 
+from _pytest.skipping import xfailed_key
+
 
 @pytest.fixture(name="archrule")
 def check_fixture():
     return archrule
-
-
-from _pytest.skipping import xfailed_key
 
 
 @pytest.hookimpl(hookwrapper=True, trylast=True)
