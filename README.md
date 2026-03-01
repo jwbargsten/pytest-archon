@@ -1,6 +1,7 @@
 # pytest-archon
 
 [![build_and_test](https://github.com/jwbargsten/pytest-archon/actions/workflows/tests.yml/badge.svg)](https://github.com/jwbargsten/pytest-archon/actions/workflows/tests.yml)
+[![libs.tech recommends](https://libs.tech/project/567621303/badge.svg)](https://libs.tech/project/567621303/pytest-archon)
 
 `pytest-archon` is a little tool that helps you structure (large) Python projects. This
 tool allows you to define architectural boundaries in your code, also known as
